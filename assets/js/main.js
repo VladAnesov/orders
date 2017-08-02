@@ -34,14 +34,14 @@ function fadeIn(element) {
  Функция показа страниц без перезагрузки страниц.
  */
 
-function showContent(link, element, loading, hash) {
+function showContent(object, element, loading, hash) {
     event.preventDefault();
     var cont = QS(element)[0];
     var loading = QS(loading)[0];
 
     cont.innerHTML = loading.innerHTML;
 
-    link = link.getAttribute("href");
+    link = object.getAttribute("href");
 
     var http = createRequestObject();
     if (http) {
@@ -51,6 +51,12 @@ function showContent(link, element, loading, hash) {
             if (http.readyState == 4) {
                 cont.innerHTML = http.responseText;
                 window.history.pushState({}, null, http.responseURL);
+                doc = QS(".menu-item");
+                for (var i = 0; i < doc.length; i++) {
+                    doc[i].classList.remove("active");
+                }
+                object.parentElement.classList.add('active');
+                http.setRequestHeader("VAHash", ' ');
             }
         }
         http.send(null);
@@ -80,6 +86,30 @@ function createRequestObject() {
             }
         }
     }
+}
+
+/*
+ Проходим по классу
+ */
+function each(object, callback) {
+    if (!isObject(object) && typeof object.length !== 'undefined') {
+        for (var i = 0, length = object.length; i < length; i++) {
+            var value = object[i];
+            if (callback.call(value, i, value) === false) break;
+        }
+    } else {
+        for (var name in object) {
+            if (!Object.prototype.hasOwnProperty.call(object, name)) continue;
+            if (callback.call(object[name], name, object[name]) === false)
+                break;
+        }
+    }
+
+    return object;
+}
+
+function isObject(obj) {
+    return Object.prototype.toString.call(obj) === '[object Object]';
 }
 
 /*

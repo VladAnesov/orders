@@ -8,7 +8,8 @@
 
 ini_set('display_errors', 'on');
 define('CORE_INIT', true);
-define('PROJECT_LINK', $_SERVER['DOCUMENT_ROOT'] . '/projects/project_1635');
+define('PROJECT_URL', '/projects/project_1635');
+define('PROJECT_LINK', $_SERVER['DOCUMENT_ROOT'] . PROJECT_URL);
 require_once(PROJECT_LINK . "/mysql/connect.php");
 require_once(PROJECT_LINK . "/functions/hash.php");
 
@@ -37,42 +38,29 @@ $serverDb = 'test_db1';
 //
 //$query = BD_insert($array, 'users', $serverId, $serverDb);
 //$query = BD_diff_select($array, 1);
+
+$module = "orders";
+
+if (isset($_GET['module']) && !empty($_GET['module'])) {
+    if (file_exists(PROJECT_LINK . "/modules/" . $_GET['module'] . "/index.php")) {
+        $module = $_GET['module'];
+    } else {
+        $module = "404";
+    }
+}
+
+$h_a_f = true;
+$va_headers = getallheaders();
+$current_hash = getHash(PROJECT_URL . "/" . $module);
+if (isset($va_headers['VAHash']) && $va_headers['VAHash'] == $current_hash) {
+    $h_a_f = false;
+}
+
+if ($h_a_f) {
+    require_once(PROJECT_LINK . "/tpl/header.php");
+    require_once(PROJECT_LINK . "/modules/" . $module . "/index.php");
+    require_once(PROJECT_LINK . "/tpl/footer.php");
+} else {
+    require_once(PROJECT_LINK . "/modules/" . $module . "/index.php");
+}
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Orders</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-    <script src="assets/js/main.js"></script>
-</head>
-<body>
-<div class="a-main">
-    <div class="a-header a-wrapper">
-        <div class="a-main__logo">
-            Orders
-        </div>
-
-        <div class="a-main__menu">
-            <ul>
-                <li><a href="/main">Заказы</a></li>
-                <li class="active"><a href="/users">Исполнители</a></li>
-            </ul>
-        </div>
-    </div>
-
-    <div class="a-body a-wrapper">
-        <a href="test.php" onclick="<?= showContent('test.php', '.content', '.loading'); ?>">Открыть test.php</a>
-        <div class="loading" style="display: none;">Загрузка</div>
-        <div class="content"></div>
-    </div>
-
-    <div class="a-footer">
-        <div class="a-footer-block">
-            <p>Текущая версия: 0.1</p>
-        </div>
-    </div>
-</div>
-</body>
-</html>

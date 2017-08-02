@@ -1,1 +1,4 @@
 AddDefaultCharset UTF-8
+
+RewriteEngine On
+RewriteRule ^([A-Za-z0-9-/]+)$ index.php?module=$1 [L]
