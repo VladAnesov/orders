@@ -50,6 +50,7 @@ function showContent(link, element, loading, hash) {
         http.onreadystatechange = function () {
             if (http.readyState == 4) {
                 cont.innerHTML = http.responseText;
+                window.history.pushState({}, null, http.responseURL);
             }
         }
         http.send(null);

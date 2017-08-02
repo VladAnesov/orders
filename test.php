@@ -1,3 +1,4 @@
+<title>test</title>
 <?php
 /**
  * Created by PhpStorm.
