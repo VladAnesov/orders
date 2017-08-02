@@ -22,7 +22,7 @@ $menu = array(
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Orders</title>
+    <title><?= (isset($menu[$module]["name"])) ? $menu[$module]["name"] : 'Orders'; ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="assets/js/main.js"></script>
 </head>

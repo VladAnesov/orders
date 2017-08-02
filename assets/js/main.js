@@ -45,25 +45,36 @@ function showContent(object, element, loading, hash) {
 
     var http = createRequestObject();
     if (http) {
-        http.open('get', link);
-        http.setRequestHeader("VAHash", hash);
+        var params = "VAHash=" + hash;
+        http.open("POST", link, true);
+        //http.setRequestHeader("VAHash", hash);
+        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         http.onreadystatechange = function () {
             if (http.readyState == 4) {
+                console.log(http.responseText);
                 cont.innerHTML = http.responseText;
-                window.history.pushState({}, null, http.responseURL);
+                window.history.pushState({}, object.innerHTML, http.responseURL);
+                updateTitle(object.innerHTML);
                 doc = QS(".menu-item");
                 for (var i = 0; i < doc.length; i++) {
                     doc[i].classList.remove("active");
                 }
                 object.parentElement.classList.add('active');
-                http.setRequestHeader("VAHash", ' ');
             }
         }
-        http.send(null);
+        http.send(params);
     }
     else {
         document.location = link;
     }
+}
+
+/*
+ Обновление Title на странице
+ */
+function updateTitle(title) {
+    var elm = document.getElementsByTagName('title')[0];
+    elm.innerHTML = title;
 }
 
 /*
@@ -112,10 +123,21 @@ function isObject(obj) {
     return Object.prototype.toString.call(obj) === '[object Object]';
 }
 
+function checkPage() {
+    if (!QS(".a-main")) {
+        window.location.reload();
+    }
+}
+
+window.addEventListener("popstate", function (e) {
+    window.location.reload();
+}, false);
+
 /*
  Страница загружена, можно крутить спиннер.
  */
 document.addEventListener('DOMContentLoaded', function () {
+    checkPage();
     console.log("page init");
 });
 

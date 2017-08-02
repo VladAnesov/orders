@@ -1114,9 +1114,7 @@ function isArray(obj) {
 function isString(obj) {
     return typeof obj === 'string';
 }
-function isObject(obj) {
-    return Object.prototype.toString.call(obj) === '[object Object]';
-}
+
 function isEmpty(o) {
     if (Object.prototype.toString.call(o) !== '[object Object]') {
         return false;

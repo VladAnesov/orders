@@ -50,9 +50,8 @@ if (isset($_GET['module']) && !empty($_GET['module'])) {
 }
 
 $h_a_f = true;
-$va_headers = getallheaders();
 $current_hash = getHash(PROJECT_URL . "/" . $module);
-if (isset($va_headers['VAHash']) && $va_headers['VAHash'] == $current_hash) {
+if (isset($_POST['VAHash']) && $_POST['VAHash'] == $current_hash) {
     $h_a_f = false;
 }
 
