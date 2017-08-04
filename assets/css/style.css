@@ -2,18 +2,15 @@ body {
     background: #edeef0;
     font-family: 'Roboto', sans-serif;
 }
-
 .a-main {
     background: #ffffff;
     border-radius: 5px;
     width: 1024px;
     margin: 10px auto;
 }
-
 .a-wrapper {
     padding: 0 20px;
 }
-
 .a-header {
     display: -webkit-box;
     display: -moz-box;
@@ -34,13 +31,11 @@ body {
     border-bottom: 1px solid #e7e8ec;
     margin-bottom: 5px;
 }
-
 .a-main__menu ul {
     -o-transition: color 0.2s ease;
     transition: color 0.2s ease;
     margin: 0;
 }
-
 .a-main__menu li {
     margin: 0 3px;
     display: -webkit-box;
@@ -54,26 +49,24 @@ body {
     -ms-flex-align: center;
     align-items: center;
 }
-
 .a-main__menu li:hover > a {
     border-bottom: 2px solid #cad2db;
+    margin-bottom: 0px;
 }
-
 .a-main__menu li.active > a {
     border-bottom: 2px solid #6387ac;
+    margin-bottom: 0px;
 }
-
 .a-main__menu li a {
     padding: 18px 6px 20px;
     text-decoration: none;
     color: #000;
     font-size: 14px;
+    margin-bottom: 2px;
 }
-
 .a-body {
     margin: 20px 0;
 }
-
 .a-footer {
     display: -webkit-box;
     display: -moz-box;
@@ -96,20 +89,16 @@ body {
     color: #ffffff;
     padding: 10px 20px;
 }
-
 .a-footer a {
     color: #ffffff;
     text-decoration: underline;
 }
-
 .status_active {
     color: #2e7b27;
 }
-
 .status_reserve {
     color: #c3a920;
 }
-
 .status_block {
     color: #981c0d;
 }

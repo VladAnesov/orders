@@ -6,5 +6,6 @@
  * Time: 21:32
  */
 if (!defined('CORE_INIT')) die('Core protection');
+
 ?>
 Заказы

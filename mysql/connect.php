@@ -158,7 +158,7 @@ function BD_diff_select($filter, $serverid)
                         $v_2_explode = explode(";", $v_2['search']);
                         $sl[] = "`$k_1`.`$k_2`.`" . implode("`, `$k_1`.`$k_2`.`", $v_2_explode) . "`";
                     } else {
-                        if($v_2['search'] == "*") {
+                        if ($v_2['search'] == "*") {
                             $sl[] = "`$k_1`.`$k_2`." . $v_2['search'];
                         } else {
                             $sl[] = "`$k_1`.`$k_2`.`" . $v_2['search'] . "`";
@@ -176,12 +176,12 @@ function BD_diff_select($filter, $serverid)
                             /* 5 level */
                             /* Начинаем крутить бубен, в силу идет INNER JOIN */
                             $i_j = "`$k_3`.`$k_4`";
-                            foreach($v_4 as $k_5 => $v_5) {
+                            foreach ($v_4 as $k_5 => $v_5) {
                                 if (stripos($k_5, "self_") !== false) {
                                     $k_5 = str_replace(array('self_'), '', $k_5);
-                                    $inner_join_array[] = "`$k_1`.`$k_2`.`".$k_5."` = ".$i_j.".`".$v_5."`";
+                                    $inner_join_array[] = "`$k_1`.`$k_2`.`" . $k_5 . "` = " . $i_j . ".`" . $v_5 . "`";
                                 } else {
-                                    $inner_join_array[] = $i_j.".`".$k_5."` = ".$i_j.".`".$v_5."`";
+                                    $inner_join_array[] = $i_j . ".`" . $k_5 . "` = " . $i_j . ".`" . $v_5 . "`";
                                 }
                             }
                             $inner_join .= $i_j . " ON (" . implode(', ', $inner_join_array) . ")";
@@ -198,14 +198,14 @@ function BD_diff_select($filter, $serverid)
         $from = null;
         /* Default Base */
         $d_base = null;
-        foreach($va_bases as $k_1 => $v_1) {
+        foreach ($va_bases as $k_1 => $v_1) {
             $f_m[] = "`$k_1`.`$v_1`";
             $d_base = $k_1;
             break;
         }
         $from = implode(', ', $f_m);
 
-        $sql = "SELECT ".$select." FROM (".$from.") ".$inner_join;
+        $sql = "SELECT " . $select . " FROM (" . $from . ") " . $inner_join;
 
         $query = BD_query($sql, $serverid, $d_base);
         $response['state'] = $query;
@@ -220,11 +220,73 @@ function BD_diff_select($filter, $serverid)
     return $response;
 }
 
+/*
+ * Позволяет выполнить запрос на выборку (возможно сделать несколько запросов подряд)
+ *
+ * $array - массив(
+ *      'таблица' => массив(
+ *          'select' => 'Значения, * или через запятую'
+ *          'where' => 'условие, например, id = 5'
+ *      )
+ * )
+ */
+function BD_select($array, $serverid, $database)
+{
+    global $bd_array;
+    global $bd_users;
+    global $bd_tables;
+
+    if (!is_array($array)) {
+        return false;
+    }
+
+    $num = 0;
+    foreach ($array as $k_1 => $v_1) {
+        $table = mysql_escape_string($k_1);
+        $fields = mysql_escape_string($v_1['select']);
+        $filter = $v_1['where'];
+
+        $query = "SELECT {$fields} FROM `{$table}` WHERE {$filter}";
+
+        $response = array('status' => 'ok');
+        $db = BD_Connect($bd_array[$serverid], $bd_users[$bd_tables[$database]]['user'], $bd_users[$bd_tables[$database]]['password'], $database);
+        $result = mysql_query($query) or $response['status'] = 'Запрос не удался: ' . mysql_error() . ' SQL:' . $query;
+        while ($line = mysql_fetch_array($result, MYSQL_ASSOC)) {
+            $response['response'][$num]['data'][] = $line;
+        }
+        mysql_free_result($result);
+        $num++;
+    }
+
+    mysql_close($db);
+    return $response;
+}
+
+function BD_update($table, $fields, $where, $serverid, $database)
+{
+    global $bd_array;
+    global $bd_users;
+    global $bd_tables;
+
+    $table = mysql_escape_string($table);
+    $query = "UPDATE `{$table}` SET " . BD_array2update($fields) . " WHERE {$where}";
+
+    $response = array('status' => 'ok');
+    $db = BD_Connect($bd_array[$serverid], $bd_users[$bd_tables[$database]]['user'], $bd_users[$bd_tables[$database]]['password'], $database);
+    $result = mysql_query($query) or $response['status'] = 'Запрос не удался: ' . mysql_error();
+    while ($line = mysql_fetch_array($result, MYSQL_ASSOC)) {
+        $response['response'][] = $line;
+    }
+    mysql_free_result($result);
+    mysql_close($db);
+    return $response;
+}
+
 function BD_array2update($input)
 {
     $output = implode(', ', array_map(
         function ($v, $k) {
-            return sprintf("%s='%s'", $k, $v);
+            return sprintf("`%s`='%s'", mysql_escape_string($k), mysql_escape_string($v));
         },
         $input,
         array_keys($input)

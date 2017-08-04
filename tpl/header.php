@@ -17,14 +17,17 @@ $menu = array(
         'url' => PROJECT_URL . "/users",
     )
 );
+
+$auth = USERS_INIT();
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title><?= (isset($menu[$module]["name"])) ? $menu[$module]["name"] : 'Orders'; ?></title>
-    <link rel="stylesheet" href="assets/css/style.css">
-    <script src="assets/js/main.js"></script>
+    <link rel="stylesheet" href="<?= PROJECT_URL ?>/assets/css/style.css">
+    <script src="<?= PROJECT_URL ?>/assets/js/main.js"></script>
 </head>
 <body>
 <div class="a-main">
@@ -47,6 +50,17 @@ $menu = array(
                     </li>
                 <? endforeach; ?>
             </ul>
+        </div>
+
+        <div class="a-main__user">
+            <?php
+
+            if (isset($auth['authlink']) && !empty($auth['authlink'])) {
+                echo '<a href="' . $auth['authlink'] . '">Авторизоваться через ВКонтакте</a>';
+            } else {
+                echo '<a href="' . PROJECT_URL . '/auth?logout=yes">Выйти</a>';
+            }
+            ?>
         </div>
     </div>
     <div class="a-body a-wrapper">

@@ -1,4 +1,13 @@
 AddDefaultCharset UTF-8
 
 RewriteEngine On
-RewriteRule ^([A-Za-z0-9-/]+)$ index.php?module=$1 [L]
+RewriteBase /projects/project_1635/
+
+# Редирект на адреса без слеша
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} ^(.+)/$
+RewriteRule ^(.+)/$ $1 [R=301,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . index.php [L]
