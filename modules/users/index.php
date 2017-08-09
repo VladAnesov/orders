@@ -7,5 +7,5 @@
  */
 
 if (!defined('CORE_INIT')) die('Core protection');
-?>
-Пользователи
+
+echo USER_GetList();

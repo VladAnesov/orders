@@ -35,7 +35,7 @@ function USERS_INIT($ignore_f_c = false)
 
                 if (empty($S_Response['response'])) {
                     /* Пользователя нет, регаем */
-                    $user_hash = USER_CreateHash($_SERVER['REMOTE_ADDR']);
+                    $user_hash = USER_CreateHash($_SERVER['REMOTE_ADDR'] . $user_info['response']['0']['screen_name']);
                     $user_array = array(
                         'vk_uid' => $user_info['response']['0']['uid'],
                         'name' => $user_info['response']['0']['first_name'] . ' ' . $user_info['response']['0']['last_name'],
@@ -62,7 +62,7 @@ function USERS_INIT($ignore_f_c = false)
                     }
                 } else {
                     /* Индентифицируем пользователя */
-                    $user_hash = USER_CreateHash($_SERVER['REMOTE_ADDR']);
+                    $user_hash = USER_CreateHash($_SERVER['REMOTE_ADDR'] . $user_info['response']['0']['screen_name']);
 
                     $update_fields = array(
                         'name' => $user_info['response']['0']['first_name'] . ' ' . $user_info['response']['0']['last_name'],
@@ -252,6 +252,49 @@ function VK_GetUserInfo($user_ids, $fields, $access_token)
 
 function USER_CreateHash($login)
 {
-    $secret_word = "error0" . date("d_m_Y");
-    return crypt($login, $secret_word);
+    return hash('sha512', $login . date("d_m_Y"));
+}
+
+function USER_GetList()
+{
+    $array = array(
+        'test_db1' => array(
+            'users' => array(
+                'map' => 't2',
+                'search' => '*',
+                'where' => array(
+                    'test_db2' => array(
+                        'orders' => array(
+                            'self_id' => 'contractor',
+                            'value_status' => '3'
+                        )
+                    )
+                )
+            )
+        ),
+        'test_db2' => array(
+            'orders' => array(
+                'search' => 'id'
+            )
+        )
+    );
+    $query = BD_diff_select($array, 1);
+
+    $html_output = '<table>';
+    $html_output .= '<tr>';
+    $html_output .= '<th>Исполнитель</th>';
+    $html_output .= '<th>Выполнил работ</th>';
+    $html_output .= '</tr>';
+    $html_output .= '<tr>';
+    if (isset($query["state"]["response"]) && !empty($query["state"]["response"])) {
+        foreach ($query["state"]["response"] as $order_key => $order_value) {
+            $html_output .= '<td>';
+            $html_output .= '<a href="https://vk.com/' . $order_value['login'] . '" target="_blank">' . $order_value['name'] . '</a>';
+            $html_output .= '</td>';
+            $html_output .= '<td>' . $order_value["t2_count"] . '</td>';
+        }
+    }
+    $html_output .= '</tr>';
+    $html_output .= '</table>';
+    return $html_output;
 }

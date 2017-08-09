@@ -7,5 +7,5 @@
  */
 if (!defined('CORE_INIT')) die('Core protection');
 
-?>
-Заказы
+$test = PS_GetList();
+echo $test;

@@ -20,6 +20,10 @@ $menu = array(
 
 $auth = USERS_INIT();
 
+//echo '<pre>';
+//var_dump($auth);
+//echo '</pre>';
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -56,9 +60,12 @@ $auth = USERS_INIT();
             <?php
 
             if (isset($auth['authlink']) && !empty($auth['authlink'])) {
-                echo '<a href="' . $auth['authlink'] . '">Авторизоваться через ВКонтакте</a>';
+                echo '<a class="auth" href="' . $auth['authlink'] . '">Авторизоваться через ВКонтакте</a>';
             } else {
-                echo '<a href="' . PROJECT_URL . '/auth?logout=yes">Выйти</a>';
+                echo '<div class="a-main__user">';
+                echo '<span>' . $auth['user']['name'] . '</span>';
+                echo '<span><a href="' . PROJECT_URL . '/auth?logout=yes">Выйти</a></span>';
+                echo '</div>';
             }
             ?>
         </div>

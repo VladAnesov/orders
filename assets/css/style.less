@@ -8,10 +8,48 @@ body {
   font-family: 'Roboto', sans-serif;
 }
 
+table {
+  width: 100%;
+  font-size: 14px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+th, td {
+  border-style: solid;
+  border-width: 0 1px 1px 0;
+  border-color: white;
+  padding: 5px 20px;
+  &:first-child {
+    text-align: left;
+    width: auto;
+    a {
+      color: #ffffff;
+    }
+  }
+
+  & > p {
+    margin: 0;
+  }
+}
+
+th, td:first-child {
+  background: #6387ac;
+  color: white;
+  padding: 10px 20px;
+  text-align: center;
+  width: auto;
+}
+
+td {
+  background: #edeef0;
+}
+
 .a-main {
   background: @white;
   border-radius: 5px;
-  width: 1024px;
+  min-width: 1024px;
+  max-width: 1240px;
   margin: 10px auto;
 }
 
@@ -79,6 +117,18 @@ body {
     color: #000;
     font-size: 14px;
     margin-bottom: 2px;
+  }
+}
+
+.a-main__user {
+  width: 240px;
+  a.auth {
+    font-size: 14px;
+    text-decoration: none;
+    background: #6387ac;
+    padding: 20px 10px;
+    color: #ffffff;
+    display: block;
   }
 }
 

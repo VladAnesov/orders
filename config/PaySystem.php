@@ -17,6 +17,7 @@ $PaySystemConfig = array(
     'min_price' => '1',
     'max_price' => '15000',
     'percent_type' => 'P',
-    'percent_cost' => '10'
+    'percent_cost' => '10',
+    'currency' => 'руб.'
 );
 

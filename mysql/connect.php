@@ -19,8 +19,8 @@ $bd_users = array(
         'password' => 'Ub0kFDhfix'
     ),
     '2' => array(
-        'user' => 'test_user2',
-        'password' => 'iIT3fwJ0Hr'
+        'user' => 'test_user1',
+        'password' => 'Ub0kFDhfix'
     )
 );
 
@@ -107,6 +107,7 @@ function BD_insert($array, $filter, $serverid, $database)
  * Структура массива $filter
  * 'база_данных' => массив( #1 LEVEL
  *      'таблица' => массив( #2 LEVEL
+ *          'map' => 'ключ'
  *          'search' => 'выборка полей (через точку с запятой)', #3 level (параметры выборки)
  *          'where' => массив( #3 level
  *              'база_данных' => массив( #4 level
@@ -142,8 +143,16 @@ function BD_diff_select($filter, $serverid)
         $inner_join_array = array();
         $sl = null;
         $f_m = null;
+        $extra_key = null;
 
         foreach ($filter as $k_1 => $v_1) {
+            /* Установка маппинга */
+            foreach ($v_1 as $k_2 => $v_2) {
+                if (isset($v_2["map"])) {
+                    $extra_key = $v_2["map"];
+                }
+            }
+
             /* 2 level */
             foreach ($v_1 as $k_2 => $v_2) {
                 /*
@@ -156,12 +165,17 @@ function BD_diff_select($filter, $serverid)
                 if (isset($v_2['search']) && !empty($v_2['search'])) {
                     if (stripos($v_2['search'], ";") !== false) {
                         $v_2_explode = explode(";", $v_2['search']);
-                        $sl[] = "`$k_1`.`$k_2`.`" . implode("`, `$k_1`.`$k_2`.`", $v_2_explode) . "`";
+                        foreach ($v_2_explode as $exp_k => $exp_v) {
+                            $exp_sql = "`$k_1`.`$k_2`.`" . $exp_v . "` as `" . $extra_key . "_" . $exp_v . "`";
+                            $sl[] = $exp_sql;
+                        }
                     } else {
                         if ($v_2['search'] == "*") {
                             $sl[] = "`$k_1`.`$k_2`." . $v_2['search'];
                         } else {
-                            $sl[] = "`$k_1`.`$k_2`.`" . $v_2['search'] . "`";
+                            $sl[] = "`$k_1`.`$k_2`.`" . $v_2['search'] . "` as `" . $extra_key . "_" . $v_2['search'] . "`";
+                            $sl[] = "COUNT(`$k_1`.`$k_2`.`" . $v_2['search'] . "`) as `" . $extra_key . "_count`";
+
                         }
                     }
                 } else {
@@ -180,11 +194,16 @@ function BD_diff_select($filter, $serverid)
                                 if (stripos($k_5, "self_") !== false) {
                                     $k_5 = str_replace(array('self_'), '', $k_5);
                                     $inner_join_array[] = "`$k_1`.`$k_2`.`" . $k_5 . "` = " . $i_j . ".`" . $v_5 . "`";
+                                } else if (stripos($k_5, "value_") !== false) {
+                                    $k_5 = str_replace(array('value_'), '', $k_5);
+                                    $inner_join_array[] = $i_j . ".`" . $k_5 . "` = '" . mysql_escape_string($v_5) . "'";
                                 } else {
                                     $inner_join_array[] = $i_j . ".`" . $k_5 . "` = " . $i_j . ".`" . $v_5 . "`";
                                 }
                             }
-                            $inner_join .= $i_j . " ON (" . implode(', ', $inner_join_array) . ")";
+
+                            /* Inner join */
+                            $inner_join .= $i_j . " ON (" . implode(' AND ', $inner_join_array) . ")";
                         }
                     }
                 }
@@ -210,10 +229,10 @@ function BD_diff_select($filter, $serverid)
         $query = BD_query($sql, $serverid, $d_base);
         $response['state'] = $query;
 
-//        $response['debug'] = array(
-//            'filter' => $filter,
-//            'sql' => $sql,
-//        );
+        $response['debug'] = array(
+            'filter' => $filter,
+            'sql' => $sql,
+        );
     } else {
         $response['status'] = 'Первые два парамтера должны быть переданы в виде массива.';
     }
