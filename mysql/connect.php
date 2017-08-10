@@ -89,7 +89,6 @@ function BD_insert($array, $filter, $serverid, $database)
         if ($query) {
             $response['userId'] = mysql_insert_id();
         }
-        mysql_free_result($query);
         $response['sql'] = $sql;
     } else {
         $response['status'] = 'Первый параметр должнен быть передан в виде массива.';
@@ -98,8 +97,87 @@ function BD_insert($array, $filter, $serverid, $database)
     return $response;
 }
 
+/*
+ * Позволяет выполнить запрос на выборку (возможно сделать несколько запросов подряд)
+ *
+ * $array - массив(
+ *      'таблица' => массив(
+ *          'select' => 'Значения, * или через запятую'
+ *          'where' => 'условие, например, id = 5'
+ *      )
+ * )
+ */
+function BD_select($array, $serverid, $database)
+{
+    global $bd_array;
+    global $bd_users;
+    global $bd_tables;
+
+    if (!is_array($array)) {
+        return false;
+    }
+
+    $num = 0;
+    foreach ($array as $k_1 => $v_1) {
+        $table = mysql_escape_string($k_1);
+        $fields = mysql_escape_string($v_1['select']);
+        $filter = $v_1['where'];
+
+        $query = "SELECT {$fields} FROM `{$table}` WHERE {$filter}";
+
+        $response = array('status' => 'ok');
+        $db = BD_Connect($bd_array[$serverid], $bd_users[$bd_tables[$database]]['user'], $bd_users[$bd_tables[$database]]['password'], $database);
+        $result = mysql_query($query) or $response['status'] = 'Запрос не удался: ' . mysql_error() . ' SQL:' . $query;
+        while ($line = mysql_fetch_array($result, MYSQL_ASSOC)) {
+            $response['response'][$num]['data'][] = $line;
+        }
+        mysql_free_result($result);
+
+        $num++;
+    }
+
+    mysql_close($db);
+    return $response;
+}
+
+function BD_update($table, $fields, $where, $serverid, $database)
+{
+    global $bd_array;
+    global $bd_users;
+    global $bd_tables;
+
+    $table = mysql_escape_string($table);
+    $query = "UPDATE `{$table}` SET " . BD_array2update($fields) . " WHERE {$where}";
+
+    $response = array('status' => 'ok');
+    $db = BD_Connect($bd_array[$serverid], $bd_users[$bd_tables[$database]]['user'], $bd_users[$bd_tables[$database]]['password'], $database);
+    $result = mysql_query($query) or $response['status'] = 'Запрос не удался: ' . mysql_error();
+    mysql_close($db);
+    return $response;
+}
+
+function BD_array2update($input)
+{
+    $output = implode(', ', array_map(
+        function ($v, $k) {
+            return sprintf("`%s`='%s'", mysql_escape_string($k), mysql_escape_string($v));
+        },
+        $input,
+        array_keys($input)
+    ));
+
+    return $output;
+}
+
 
 /*
+ * Заброшенных хлам и помойка
+ */
+
+
+/*
+ * Функция забракована и более не актуальна
+ *
  * Функция сложной выборки данных
  * @filter array
  * @serverId string
@@ -237,79 +315,4 @@ function BD_diff_select($filter, $serverid)
         $response['status'] = 'Первые два парамтера должны быть переданы в виде массива.';
     }
     return $response;
-}
-
-/*
- * Позволяет выполнить запрос на выборку (возможно сделать несколько запросов подряд)
- *
- * $array - массив(
- *      'таблица' => массив(
- *          'select' => 'Значения, * или через запятую'
- *          'where' => 'условие, например, id = 5'
- *      )
- * )
- */
-function BD_select($array, $serverid, $database)
-{
-    global $bd_array;
-    global $bd_users;
-    global $bd_tables;
-
-    if (!is_array($array)) {
-        return false;
-    }
-
-    $num = 0;
-    foreach ($array as $k_1 => $v_1) {
-        $table = mysql_escape_string($k_1);
-        $fields = mysql_escape_string($v_1['select']);
-        $filter = $v_1['where'];
-
-        $query = "SELECT {$fields} FROM `{$table}` WHERE {$filter}";
-
-        $response = array('status' => 'ok');
-        $db = BD_Connect($bd_array[$serverid], $bd_users[$bd_tables[$database]]['user'], $bd_users[$bd_tables[$database]]['password'], $database);
-        $result = mysql_query($query) or $response['status'] = 'Запрос не удался: ' . mysql_error() . ' SQL:' . $query;
-        while ($line = mysql_fetch_array($result, MYSQL_ASSOC)) {
-            $response['response'][$num]['data'][] = $line;
-        }
-        mysql_free_result($result);
-        $num++;
-    }
-
-    mysql_close($db);
-    return $response;
-}
-
-function BD_update($table, $fields, $where, $serverid, $database)
-{
-    global $bd_array;
-    global $bd_users;
-    global $bd_tables;
-
-    $table = mysql_escape_string($table);
-    $query = "UPDATE `{$table}` SET " . BD_array2update($fields) . " WHERE {$where}";
-
-    $response = array('status' => 'ok');
-    $db = BD_Connect($bd_array[$serverid], $bd_users[$bd_tables[$database]]['user'], $bd_users[$bd_tables[$database]]['password'], $database);
-    $result = mysql_query($query) or $response['status'] = 'Запрос не удался: ' . mysql_error();
-    while ($line = mysql_fetch_array($result, MYSQL_ASSOC)) {
-        $response['response'][] = $line;
-    }
-    mysql_free_result($result);
-    mysql_close($db);
-    return $response;
-}
-
-function BD_array2update($input)
-{
-    $output = implode(', ', array_map(
-        function ($v, $k) {
-            return sprintf("`%s`='%s'", mysql_escape_string($k), mysql_escape_string($v));
-        },
-        $input,
-        array_keys($input)
-    ));
-
-    return $output;
 }

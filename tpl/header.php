@@ -19,11 +19,6 @@ $menu = array(
 );
 
 $auth = USERS_INIT();
-
-//echo '<pre>';
-//var_dump($auth);
-//echo '</pre>';
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -35,7 +30,13 @@ $auth = USERS_INIT();
 </head>
 <body>
 <div class="a-main">
-    <div class="loading" style="display: none;">Загрузка</div>
+    <div class="loading" style="display: none;">
+        <div class="loader_bg">
+            <div class="Page__loader">
+                <div class="loader"></div>
+            </div>
+        </div>
+    </div>
     <div class="a-header a-wrapper">
         <div class="a-main__logo">
             Orders
@@ -62,9 +63,12 @@ $auth = USERS_INIT();
             if (isset($auth['authlink']) && !empty($auth['authlink'])) {
                 echo '<a class="auth" href="' . $auth['authlink'] . '">Авторизоваться через ВКонтакте</a>';
             } else {
+                global $PaySystemConfig;
                 echo '<div class="a-main__user">';
-                echo '<span>' . $auth['user']['name'] . '</span>';
-                echo '<span><a href="' . PROJECT_URL . '/auth?logout=yes">Выйти</a></span>';
+                echo '<img src="' . $auth['user']['img_50'] . '" alt="' . $auth['user']['name'] . '" />';
+                echo '<span>' . $auth['user']['name'] . '<br/>';
+                echo $auth['user']['balance'] . ' ' . $PaySystemConfig['currency'] . '</span>';
+                echo '<a href="' . PROJECT_URL . '/auth?logout=yes">Выйти</a>';
                 echo '</div>';
             }
             ?>

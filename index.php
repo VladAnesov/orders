@@ -44,18 +44,29 @@ require_once(PROJECT_LINK . "/functions/users.php");
 
 $module = "orders";
 
-$url_parts = ltrim(str_ireplace(PROJECT_URL . "/", "", $_SERVER['REQUEST_URI']));
-$url_parts = explode("/", strtok($url_parts, '?'));
+$url_parts = ltrim(str_ireplace(PROJECT_URL . "/", "", strtok($_SERVER['REQUEST_URI'], '?')));
+$url_parts = explode("/", $url_parts);
 
 if (isset($url_parts[0]) && !empty($url_parts[0])) {
     if (ctype_alnum($url_parts[0])) {
-        if (file_exists(PROJECT_LINK . "/modules/" . $url_parts[0] . "/index.php")) {
-            $module = $url_parts[0];
+        $file_name = array_shift($url_parts);
+        if (file_exists(PROJECT_LINK . "/modules/" . $file_name . "/index.php")) {
+            $module = $file_name;
         } else {
             $module = "404";
         }
     } else {
         $module = "404";
+    }
+}
+
+/*
+ * Надо переназначить элементы массива на x = x+1
+ */
+$params = null;
+for ($i = 0; $i < count($url_parts); $i++) {
+    if (!empty($url_parts[$i]) && !empty($url_parts[($i + 1)])) {
+        $params[trim($url_parts[$i])] = trim($url_parts[($i + 1)]);
     }
 }
 

@@ -34,7 +34,7 @@ function fadeIn(element) {
  Функция показа страниц без перезагрузки страниц.
  */
 
-function showContent(object, element, loading, hash) {
+function showContent(object, element, loading, hash, set_class) {
     event.preventDefault();
     var cont = QS(element)[0];
     var loading = QS(loading)[0];
@@ -54,12 +54,19 @@ function showContent(object, element, loading, hash) {
                 console.log(http.responseText);
                 cont.innerHTML = http.responseText;
                 window.history.pushState({}, object.innerHTML, http.responseURL);
-                updateTitle(object.innerHTML);
-                doc = QS(".menu-item");
-                for (var i = 0; i < doc.length; i++) {
-                    doc[i].classList.remove("active");
+
+                if (set_class) {
+                    var title = object.innerHTML.replace(/<[^>]+>/g, '');
+                    updateTitle(title);
+                    doc = QS(".menu-item");
+                    for (var i = 0; i < doc.length; i++) {
+                        doc[i].classList.remove("active");
+                    }
+                    object.parentElement.classList.add('active');
+                } else {
+                    var title = document.title + " > " + object.innerHTML.replace(/<[^>]+>/g, '');
+                    updateTitle(title);
                 }
-                object.parentElement.classList.add('active');
             }
         }
         http.send(params);

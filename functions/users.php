@@ -49,11 +49,26 @@ function USERS_INIT($ignore_f_c = false)
                     $insert_query = BD_insert($user_array, 'users', $serverId, $serverDb);
                     if ($insert_query['status'] == "ok") {
                         setcookie("va_hash", $user_hash, time() + 86300, PROJECT_URL, "vladanesov.ru");
-                        $response = array(
-                            'auth' => true,
-                            'user' => $user_info['response']['0']
+                        /*
+                         * Get User Data
+                         */
+
+                        $select_array = array(
+                            'users' => array(
+                                'select' => "*",
+                                'where' => "(`vk_uid`='{$user_info['response']['0']['uid']}')"
+                            )
                         );
-                        header("Location: " . PROJECT_URL);
+
+                        /* Проверка наличия привязки профиля */
+                        $S_Response = BD_select($select_array, $serverId, $serverDb);
+
+                        if (!empty($S_Response['response'])) {
+                            $response = array(
+                                'auth' => true,
+                                'user' => $S_Response['response']['0']['data']['0']
+                            );
+                        }
                     } else {
                         $response = array(
                             'auth' => false,
@@ -75,13 +90,29 @@ function USERS_INIT($ignore_f_c = false)
                     $update_filter = "`vk_uid` = '" . mysql_escape_string($user_info['response']['0']['uid']) . "'";
 
                     $update_query = BD_update('users', $update_fields, $update_filter, $serverId, $serverDb);
+
                     if ($update_query['status'] == "ok") {
                         setcookie("va_hash", $user_hash, time() + 86300, PROJECT_URL, "vladanesov.ru");
-                        $response = array(
-                            'auth' => true,
-                            'user' => $user_info['response']['0']
+                        /*
+                         * Get User Data
+                         */
+
+                        $select_array = array(
+                            'users' => array(
+                                'select' => "*",
+                                'where' => "(`vk_uid`='{$user_info['response']['0']['uid']}')"
+                            )
                         );
-                        header("Location: " . PROJECT_URL);
+
+                        /* Проверка наличия привязки профиля */
+                        $S_Response = BD_select($select_array, $serverId, $serverDb);
+
+                        if (!empty($S_Response['response'])) {
+                            $response = array(
+                                'auth' => true,
+                                'user' => $S_Response['response']['0']['data']['0']
+                            );
+                        }
                     } else {
                         $response = array(
                             'auth' => false,
@@ -257,44 +288,55 @@ function USER_CreateHash($login)
 
 function USER_GetList()
 {
-    $array = array(
-        'test_db1' => array(
-            'users' => array(
-                'map' => 't2',
-                'search' => '*',
-                'where' => array(
-                    'test_db2' => array(
-                        'orders' => array(
-                            'self_id' => 'contractor',
-                            'value_status' => '3'
-                        )
-                    )
-                )
-            )
-        ),
-        'test_db2' => array(
-            'orders' => array(
-                'search' => 'id'
-            )
+    $serverId = 1;
+    $serverDb = 'test_db1';
+
+    $select_array = array(
+        'users' => array(
+            'select' => "*",
+            'where' => "1"
         )
     );
-    $query = BD_diff_select($array, 1);
+
+    /* Проверка наличия привязки профиля */
+    $query = BD_select($select_array, $serverId, $serverDb);
 
     $html_output = '<table>';
     $html_output .= '<tr>';
-    $html_output .= '<th>Исполнитель</th>';
-    $html_output .= '<th>Выполнил работ</th>';
+    $html_output .= '<th>Исполнители</th>';
     $html_output .= '</tr>';
-    $html_output .= '<tr>';
-    if (isset($query["state"]["response"]) && !empty($query["state"]["response"])) {
-        foreach ($query["state"]["response"] as $order_key => $order_value) {
+    if (isset($query["response"]["0"]["data"]) && !empty($query["response"]["0"]["data"])) {
+        foreach ($query["response"]["0"]["data"] as $order_key => $order_value) {
+            $html_output .= '<tr>';
             $html_output .= '<td>';
             $html_output .= '<a href="https://vk.com/' . $order_value['login'] . '" target="_blank">' . $order_value['name'] . '</a>';
             $html_output .= '</td>';
-            $html_output .= '<td>' . $order_value["t2_count"] . '</td>';
+            $html_output .= '</tr>';
         }
     }
-    $html_output .= '</tr>';
     $html_output .= '</table>';
     return $html_output;
+}
+
+function USER_GetByID($id)
+{
+    if (empty($id))
+        return false;
+
+    $serverId = 1;
+    $serverDb = 'test_db1';
+
+    $id_sql = mysql_escape_string($id);
+
+    $select_array = array(
+        'users' => array(
+            'select' => "*",
+            'where' => "(`id`='{$id_sql}')"
+        )
+    );
+
+    /* Проверка наличия привязки профиля */
+    $S_Response = BD_select($select_array, $serverId, $serverDb);
+
+    return $S_Response;
 }
