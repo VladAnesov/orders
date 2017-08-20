@@ -53,7 +53,10 @@ if (isset($params['id']) && !empty($params['id'])) {
         $content .= '</div>';
 
         $content .= '</div>';
-        $content .= "<p>{$data["description"]}</p>";
+        $description = str_replace(PHP_EOL, "<br/>", $data["description"]);
+        $description = str_replace('\r', "<br/>", $description);
+        $description = str_replace('\n', "<br/>", $description);
+        $content .= "<p>{$description}</p>";
         /* Если заказ выполен, то пишем об этом */
         if ($data["status"] == 4 && $data["contractor"] > 0) {
             $content .= '<div class="a-main__order-contractor">';
@@ -64,7 +67,14 @@ if (isset($params['id']) && !empty($params['id'])) {
         $content = "<h1>Заказ не найден</h1>";
     }
     echo $content;
+
+} else if (isset($params['ps_create'])) {
+    $content .= 'wow';
+    echo $content;
 } else {
-    $test = PS_GetList();
-    echo $test;
+    $list = '<div class="a-body_buttons">';
+    $list .= '<div class="btn" onclick="orders.createOrder();">Создать заказ</div>';
+    $list .= '</div>';
+    $list .= PS_GetList();
+    echo $list;
 }

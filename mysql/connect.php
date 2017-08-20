@@ -14,19 +14,39 @@ $bd_array = array(
 );
 
 $bd_users = array(
+    /* пользователи */
     '1' => array(
         'user' => 'test_user1',
-        'password' => 'Ub0kFDhfix'
+        'password' => '***'
     ),
+    /* заказы */
     '2' => array(
         'user' => 'test_user1',
-        'password' => 'Ub0kFDhfix'
+        'password' => '****'
+    ),
+    /* изменения статусов */
+    '3' => array(
+        'user' => 'test_user3',
+        'password' => '****'
+    ),
+    /* Транзакции */
+    '4' => array(
+        'user' => 'test_user4',
+        'password' => '****'
+    ),
+    /* хэш-активность */
+    '5' => array(
+        'user' => 'test_user5',
+        'password' => '****'
     )
 );
 
 $bd_tables = array(
     'test_db1' => '1',
-    'test_db2' => '2'
+    'test_db2' => '2',
+    'test_db3' => '3',
+    'test_db4' => '4',
+    'test_db5' => '5',
 );
 
 function BD_Connect($host, $user, $password, $db)

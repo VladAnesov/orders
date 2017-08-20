@@ -10,11 +10,24 @@ function QS(element) {
     return document.querySelectorAll(element);
 }
 
+function State(status) {
+    var loading_elem = QS(".loading")[0];
+    if (loading_elem) {
+        if (status === true) {
+            loading_elem.style.display = 'block';
+        } else {
+            loading_elem.style.display = 'none';
+        }
+    }
+}
+
 /*
  Функция для анимации плавного появления элемента
  Аналоговая из jQuery - $(element).fadeIn();
  */
-function fadeIn(element) {
+function fadeIn(element, max_opacity) {
+    max_opacity = typeof max_opacity !== 'undefined' ? max_opacity : 1;
+
     element.style.opacity = 0;
 
     var last = +new Date();
@@ -22,7 +35,7 @@ function fadeIn(element) {
         element.style.opacity = +element.style.opacity + (new Date() - last) / 400;
         last = +new Date();
 
-        if (+element.style.opacity < 1) {
+        if (+element.style.opacity < max_opacity) {
             (window.requestAnimationFrame && requestAnimationFrame(tick)) || setTimeout(tick, 16);
         }
     };
@@ -41,21 +54,24 @@ function showContent(object, element, loading, hash, set_class) {
 
     cont.innerHTML = loading.innerHTML;
 
-    link = object.getAttribute("href");
+    if (object && object.nodeType && object.nodeType === 1) {
+        link = object.getAttribute("href");
+    } else {
+        link = object;
+    }
 
     var http = createRequestObject();
     if (http) {
         var params = "VAHash=" + hash;
         http.open("POST", link, true);
-        //http.setRequestHeader("VAHash", hash);
+        http.setRequestHeader("VAHash", hash);
         http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         http.onreadystatechange = function () {
-            if (http.readyState == 4) {
-                console.log(http.responseText);
+            if (http.readyState === 4) {
                 cont.innerHTML = http.responseText;
                 window.history.pushState({}, object.innerHTML, http.responseURL);
 
-                if (set_class) {
+                if (set_class === true) {
                     var title = object.innerHTML.replace(/<[^>]+>/g, '');
                     updateTitle(title);
                     doc = QS(".menu-item");
@@ -68,7 +84,7 @@ function showContent(object, element, loading, hash, set_class) {
                     updateTitle(title);
                 }
             }
-        }
+        };
         http.send(params);
     }
     else {
@@ -140,6 +156,158 @@ window.addEventListener("popstate", function (e) {
     window.location.reload();
 }, false);
 
+var orders = {
+    ajax: function (url, params, callback) {
+        var http = createRequestObject();
+        if (http) {
+            params = orders.objToString(params);
+            http.open("POST", url, true);
+            http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            http.setRequestHeader("VAAjax", "yes");
+            http.onreadystatechange = function () {
+                if (http.readyState == 4) {
+                    callback.call(http.responseText);
+                }
+            };
+            http.send(params);
+        }
+    },
+    objToString: function (obj) {
+        var str = '';
+        for (var p in obj) {
+            if (obj.hasOwnProperty(p)) {
+                if (str != "") {
+                    str += "&";
+                }
+                str += p + '=' + obj[p];
+            }
+        }
+        return str;
+    },
+    createOrder: function () {
+        var getModal = "/projects/project_1635/ajax/type/ps_create";
+        var postData = "/projects/project_1635/ajax/type/ps_create_data";
+        orders.createModal(getModal, postData);
+    },
+    createModal: function (get_url, post_url) {
+        event.preventDefault();
+        State(true);
+        var e_page = QS('.a-main')[0];
+        var modal_class = "va__modal";
+        var e_modal = QS("." + modal_class)[0];
+
+        if (!e_modal) {
+            orders.ajax(get_url, {test: 'test'}, function () {
+                var response = JSON.parse(this);
+                if (typeof response["error"] !== 'undefined' && response["error"] === "no") {
+                    /* Создание окна */
+                    e_modal = document.createElement('div');
+                    e_modal.className = modal_class;
+
+                    /* создаем сам блок */
+                    e_modal_block = e_modal.appendChild(document.createElement('div'));
+                    e_modal_block.className = "va__modal-block";
+
+                    /* Суем внутрь три блока, тайтл, форма, кнопки */
+                    e_modal_title = e_modal_block.appendChild(document.createElement('div'));
+                    e_modal_title.className = "va__modal-block_title";
+                    e_modal_title_div = e_modal_title.appendChild(document.createElement('div'));
+                    e_modal_title_div.innerHTML = response["title"];
+                    e_modal_title_div.className = "va__modal-block_title-name";
+                    e_modal_title_close = e_modal_title.appendChild(document.createElement('div'));
+                    e_modal_title_close.className = "va__modal-block_title-close";
+
+                    e_modal_title_close.onclick = function () {
+                        var elements = document.getElementsByClassName(modal_class);
+                        while (elements.length > 0) {
+                            elements[0].parentNode.removeChild(elements[0]);
+                        }
+                    };
+
+                    e_modal_form = e_modal_block.appendChild(document.createElement('div'));
+                    e_modal_form.className = "va__modal-block_form";
+                    e_modal_form_inner = e_modal_form.appendChild(document.createElement('form'));
+                    e_modal_form_inner.innerHTML = response["data"];
+
+                    e_modal_buttons = e_modal_block.appendChild(document.createElement('div'));
+                    e_modal_buttons.className = "va__modal-block_buttons";
+
+                    e_modal_buttons_price = e_modal_buttons.appendChild(document.createElement('div'));
+                    e_modal_buttons_price.className = "va__price";
+
+                    e_modal_buttons_send = e_modal_buttons.appendChild(document.createElement('div'));
+                    e_modal_buttons_send.className = "va__modal-block_buttons-send btn";
+                    e_modal_buttons_send.innerHTML = response["sendtitle"];
+                    e_modal_buttons_send.setAttribute("data-url", post_url);
+                    e_modal_buttons_send.onclick = function () {
+                        State(true);
+                        var formElements = e_modal_form_inner.elements;
+                        var postData = {};
+                        var status;
+                        for (var i = 0; i < formElements.length; i++) {
+                            if (formElements[i].type !== "submit") {
+                                if (formElements[i].value.length === 0) {
+                                    //alert(formElements[i].name + " is empty");
+                                    formElements[i].className += (formElements[i].className ? ' ' : '') + 'required';
+                                    status = false;
+                                } else {
+                                    postData[formElements[i].name] = formElements[i].value;
+                                }
+                            }
+                        }
+                        if (status !== false) {
+                            orders.ajax(post_url, postData, function () {
+                                var e_response = JSON.parse(this);
+                                if (typeof e_response["error"] !== 'undefined' && e_response["error"] === "no") {
+                                    showContent(e_response["url"], '.a-body', '.loading', e_response["e_hash"], false);
+                                    var elements = document.getElementsByClassName(modal_class);
+                                    while (elements.length > 0) {
+                                        elements[0].parentNode.removeChild(elements[0]);
+                                    }
+                                } else {
+                                    alert(e_response["error_text"]);
+                                }
+                                State(false);
+                            });
+                        } else {
+                            State(false);
+                        }
+                    };
+
+                    /* Создаем окно */
+                    e_page.appendChild(e_modal);
+
+                    /* !Конец создания окна */
+                } else {
+                    alert(response["error_text"]);
+                }
+                State(false);
+            });
+        } else {
+            /* delete item */
+            var elements = document.getElementsByClassName(modal_class);
+            while (elements.length > 0) {
+                elements[0].parentNode.removeChild(elements[0]);
+            }
+            orders.createModal(get_url, post_url);
+        }
+    },
+    getPrice: function (obj, element) {
+        element = QS(element)[0];
+        if (obj.value.length !== 0) {
+            var postData = {price: obj.value};
+            orders.ajax("/projects/project_1635/ajax/type/ps_get-price", postData, function () {
+                var e_response = JSON.parse(this);
+                if (typeof e_response["error"] !== 'undefined' && e_response["error"] === "no") {
+                    element.innerHTML = e_response["data"];
+                }
+            });
+        } else {
+            element.innerHTML = '';
+        }
+    }
+};
+
 /*
  Страница загружена, можно крутить спиннер.
  */
@@ -147,4 +315,3 @@ document.addEventListener('DOMContentLoaded', function () {
     checkPage();
     console.log("page init");
 });
-

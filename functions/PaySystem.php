@@ -6,43 +6,143 @@
  * Time: 17:11
  */
 
+if (!defined('CORE_INIT')) die('Core protection');
+
 require_once(PROJECT_LINK . "/config/PaySystem.php");
 require_once(PROJECT_LINK . "/mysql/connect.php");
 
-function CreateOrderDialog()
+function PS_Hash($data)
 {
+    return hash('sha512', $data);
+}
 
+function PS_CreateOrderDialog()
+{
+    global $PaySystemConfig;
+    $user = USERS_GET_USER();
+    if (isset($user["id"])) {
+        $hash = PS_Hash($user['login'] . $user["hash"]);
+
+        $data = '<div class="va__modal_iblock">';
+        $data .= '<div class="va__modal_iblock-title">Название</div>';
+        $data .= '<input class="va-input" name="name" placeholder="Название заказа" required/>';
+        $data .= '</div>';
+
+        $data .= '<div class="va__modal_iblock">';
+        $data .= '<div class="va__modal_iblock-title">Стоимость</div>';
+        $data .= '<input type="number" class="va-input" oninput="orders.getPrice(this, \'.va__price\');" min="' . $PaySystemConfig["min_price"] . '" max="' . $PaySystemConfig["max_price"] . '" name="cost" placeholder="Сумма в рублях" required/>';
+        $data .= '</div>';
+
+        $data .= '<div class="va__modal_iblock">';
+        $data .= '<div class="va__modal_iblock-title">Описание</div>';
+        $data .= '<textarea class="va-textarea" name="description" placeholder="Кратко опишите что нужно сделать." required></textarea>';
+        $data .= '</div>';
+        $data .= '<input type="hidden" name="hash" value="' . $hash . '"/>';
+
+        $response = array(
+            'error' => 'no',
+            'title' => 'Создание нового заказа',
+            'sendtitle' => 'Создать заказ',
+            'data' => $data
+        );
+    } else {
+        $response = array(
+            'error' => 'yes',
+            'error_text' => 'Вы не авторизованы',
+        );
+    }
+    return $response;
+}
+
+function PS_CreateOrder($data)
+{
+    sleep(1);
+    if ((!isset($data["name"]) || empty($data["name"])) ||
+        (!isset($data["description"]) || empty($data["description"])) ||
+        (!isset($data["cost"]) || empty($data["cost"])) ||
+        empty($data)) {
+        $response = array(
+            'error' => 'yes',
+            'error_text' => 'data is empty'
+        );
+    } else {
+        $user = USERS_GET_USER();
+        if ($user) {
+            foreach ($data as $k => $v) {
+                $data[trim(mysql_escape_string($k))] = mysql_escape_string(trim($v));
+            }
+
+            $hash = PS_Hash($user['login'] . $user["hash"]);
+            if ($hash == $data["hash"]) {
+                if (isset($data['cost']) && !ctype_digit($data['cost'])) {
+                    $response = array(
+                        'error' => 'yes',
+                        'error_text' => "price is not numeric"
+                    );
+                } else {
+                    $order_array = array(
+                        'name' => htmlspecialchars($data["name"]),
+                        'description' => htmlspecialchars($data['description']),
+                        'price' => $data['cost'],
+                        'owner' => $user['id'],
+                        'status' => '1',
+                        'stimestamp' => time()
+                    );
+                    $serverId = "1";
+                    $serverDb = "test_db2";
+                    $insert_query = BD_insert($order_array, 'orders', $serverId, $serverDb);
+                    if ($insert_query['status'] == "ok") {
+                        $e_url = PROJECT_URL . "/orders/id/" . $insert_query['userId'];
+                        $e_hash = getHash(PROJECT_URL . "/orders");
+                        $response = array(
+                            'error' => 'no',
+                            'status' => 'ok',
+                            'url' => $e_url,
+                            'e_hash' => $e_hash
+                        );
+                    } else {
+                        $response = array(
+                            'error' => 'yes',
+                            'error_text' => $insert_query['status']
+                        );
+                    }
+                }
+            } else {
+                $response = array(
+                    'error' => 'yes',
+                    'error_text' => 'Invalid hash'
+                );
+            }
+        } else {
+            $response = array(
+                'error' => 'yes',
+                'error_text' => '401 Unauthorized'
+            );
+        }
+    }
+
+    return $response;
 }
 
 function PS_GetList()
 {
     global $PaySystemConfig;
-    $array = array(
-        'test_db2' => array(
-            'orders' => array(
-                'map' => 't2',
-                'search' => '*',
-                'where' => array(
-                    'test_db1' => array(
-                        'users' => array(
-                            'self_owner' => 'id',
-                        )
-                    ),
-                    'test_db1' => array(
-                        'users' => array(
-                            'self_owner' => 'id',
-                        )
-                    )
-                )
-            )
-        ),
-        'test_db1' => array(
-            'users' => array(
-                'search' => 'name;img_50;login'
-            )
+
+    $serverId = 1;
+    $serverDb = 'test_db2';
+
+    $select_array = array(
+        'orders' => array(
+            'select' => "*",
+            'where' => "`status` != '4'"
         )
     );
-    $query = BD_diff_select($array, 1);
+
+    /* Проверка наличия привязки профиля */
+    $query = BD_select($select_array, $serverId, $serverDb);
+    if (isset($query["response"]["0"]["data"])) {
+        $data = $query["response"]["0"]["data"];
+    }
 
     $html_output = '<table>';
     $html_output .= '<thead>';
@@ -53,24 +153,31 @@ function PS_GetList()
     $html_output .= '<th>Стоимость</th>';
     $html_output .= '</tr>';
     $html_output .= '</thead>';
-    $html_output .= '<tr>';
-    if (isset($query["state"]["response"]) && !empty($query["state"]["response"])) {
-        foreach ($query["state"]["response"] as $order_key => $order_value) {
+    if (isset($data) && !empty($data)) {
+        foreach ($data as $order_key => $order_value) {
             $link = PROJECT_URL . "/orders/id/" . $order_value["id"];
             $link_js = showContent(PROJECT_URL . "/orders", '.a-body', '.loading', false);
             $price = PS_Price($order_value['price']);
+
+            $user_owner = USER_GetByID($order_value["owner"]);
+            $owner = $user_owner["response"]["0"]["data"]["0"];
+
+            $html_output .= '<tr>';
             $html_output .= '<td>';
             $html_output .= '<a href="' . $link . '" onclick="' . $link_js . '"><b>' . $order_value["name"] . '</b></a>';
-            $html_output .= '<br/><p>' . $order_value['description'] . '</p>';
+            $description = str_replace(PHP_EOL, " ", $order_value["description"]);
+            $description = str_replace('\r', " ", $description);
+            $description = str_replace('\n', " ", $description);
+            $html_output .= '<br/><p>' . $description . '</p>';
             $html_output .= '</td>';
             $html_output .= '<td>';
-            $html_output .= '<a href="https://vk.com/' . $order_value['t2_login'] . '" target="_blank">' . $order_value['t2_name'] . '</a>';
+            $html_output .= '<a href="https://vk.com/' . $owner['login'] . '" target="_blank">' . $owner['name'] . '</a>';
             $html_output .= '</td>';
             $html_output .= '<td>' . PS_GetStatus($order_value['status']) . '</td>';
             $html_output .= '<td>' . $price['price'] . ' ' . $PaySystemConfig['currency'] . '</td>';
+            $html_output .= '</tr>';
         }
     }
-    $html_output .= '</tr>';
     $html_output .= '</table>';
 
     return $html_output;

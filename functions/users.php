@@ -6,6 +6,8 @@
  * Time: 17:21
  */
 
+if (!defined('CORE_INIT')) die('Core protection');
+
 require_once(PROJECT_LINK . "/config/VK.php");
 require_once(PROJECT_LINK . "/mysql/connect.php");
 
@@ -183,6 +185,32 @@ function USERS_INIT($ignore_f_c = false)
     }
 
     return $response;
+}
+
+function USERS_GET_USER()
+{
+    if (isset($_COOKIE['va_hash']) && !empty($_COOKIE['va_hash'])) {
+        $serverId = 1;
+        $serverDb = 'test_db1';
+
+        $mysql_hash = mysql_escape_string($_COOKIE['va_hash']);
+        $select_array = array(
+            'users' => array(
+                'select' => "*",
+                'where' => "(`hash`='{$mysql_hash}')"
+            )
+        );
+
+        $S_Response = BD_select($select_array, $serverId, $serverDb);
+
+        if (empty($S_Response['response'])) {
+            return false;
+        } else {
+            return $S_Response['response']['0']['data']['0'];
+        }
+    } else {
+        return false;
+    }
 }
 
 function USERS_LOGOUT()

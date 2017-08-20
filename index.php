@@ -17,32 +17,11 @@ $serverDb = 'test_db1';
 require_once(PROJECT_LINK . "/functions/hash.php");
 require_once(PROJECT_LINK . "/functions/PaySystem.php");
 require_once(PROJECT_LINK . "/functions/users.php");
-
-//$array = array(
-//    'test_db1' => array(
-//        'users' => array(
-//            'search' => 'id;login;password',
-//            'where' => array(
-//                'test_db2' => array(
-//                    'orders' => array(
-//                        'self_id' => 'owner',
-//                    )
-//                )
-//            )
-//        )
-//    ),
-//    'test_db2' => array(
-//        'orders' => array(
-//            'search' => 'owner;id'
-//        )
-//    )
-//);
-//
-//$query = BD_insert($array, 'users', $serverId, $serverDb);
-//$query = BD_diff_select($array, 1);
-
+require_once(PROJECT_LINK . "/functions/hash-activity.php");
 
 $module = "orders";
+
+$headers = getallheaders();
 
 $url_parts = ltrim(str_ireplace(PROJECT_URL . "/", "", strtok($_SERVER['REQUEST_URI'], '?')));
 $url_parts = explode("/", $url_parts);
@@ -73,6 +52,10 @@ for ($i = 0; $i < count($url_parts); $i++) {
 $h_a_f = true;
 $current_hash = getHash(PROJECT_URL . "/" . $module);
 if (isset($_POST['VAHash']) && $_POST['VAHash'] == $current_hash) {
+    $h_a_f = false;
+}
+
+if (isset($headers['VAAjax']) && $headers['VAAjax'] == 'yes') {
     $h_a_f = false;
 }
 

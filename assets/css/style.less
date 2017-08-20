@@ -2,6 +2,16 @@
 @gray: #edeef0;
 @lightwhite: #fafbfc;
 @white: #ffffff;
+@black: #000000;
+@vk: #6287ae;
+@red: #ff0000;
+@border_line: #e7e8ec;
+
+@btn_vk: #5e81a8;
+@btn_vk_hover: #6888ad;
+@btn_vk_active: #5779a1;
+
+@modal_title: #656565;
 
 body {
   background: @gray;
@@ -64,6 +74,11 @@ td {
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.7);
+  z-index: 10;
+}
+
+.required {
+  outline: 2px solid @red;
 }
 
 @keyframes loader-animation {
@@ -121,7 +136,7 @@ td {
   justify-content: space-between;
 
   background: @lightwhite;
-  border-bottom: 1px solid #e7e8ec;
+  border-bottom: 1px solid @border_line;
   margin-bottom: 5px;
 }
 
@@ -196,6 +211,11 @@ td {
 
 .a-body {
   margin: 20px 0;
+  .a-body_buttons {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+  }
 }
 
 .a-footer {
@@ -257,6 +277,138 @@ td {
     font-size: 14px;
   }
 
+}
+
+.va__modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  .va__modal-block {
+    width: 700px;
+    height: auto;
+    .va__modal-block_title {
+      padding: 0;
+      background-color: @vk;
+      color: #fff;
+      border-radius: 2px 2px 0 0;
+      display: flex;
+      justify-content: space-between;
+      .va__modal-block_title-name {
+        padding: 0 25px;
+        color: @white;
+        font-size: 14px;
+        line-height: 54px;
+      }
+
+      .va__modal-block_title-close {
+        padding: 21px 25px 21px 12px;
+        background: url('../images/cross.png') no-repeat 12px 21px;
+        width: 12px;
+        height: 12px;
+        opacity: 0.75;
+        filter: alpha(opacity=75);
+        cursor: pointer;
+        outline: none;
+        &:hover {
+          opacity: 1;
+          -webkit-filter: none;
+          filter: none;
+        }
+      }
+    }
+
+    .va__modal-block_form {
+      background: @white;
+      color: @black;
+      padding: 20px 25px;
+      .va__modal_iblock {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        .va__modal_iblock-title {
+          width: 200px;
+          color: @modal_title;
+          line-height: 16px;
+          font-size: 13px;
+          &:after {
+            content: ":";
+          }
+        }
+      }
+      textarea {
+        overflow: hidden;
+        resize: none;
+        height: 100px;
+      }
+      input, textarea {
+        color: @black;
+        border: 1px solid #d3d9de;
+        padding: 5px 9px 7px;
+        border-radius: 1px;
+        box-sizing: border-box;
+        width: 100%;
+        &:focus {
+          border-color: #c9d0d6;
+          outline: none;
+        }
+      }
+    }
+
+    .va__modal-block_buttons {
+      padding: 14px 23px 14px 25px;
+      background-color: @lightwhite;
+      border-radius: 0 0 2px 2px;
+      border-top: 1px solid @border_line;
+      white-space: nowrap;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      .va__price {
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+.btn {
+  padding: 7px 16px 8px;
+  margin: 0;
+  font-size: 12.5px;
+  display: inline-block;
+  zoom: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  outline: none;
+  font-family: -apple-system, BlinkMacSystemFont, Roboto, Open Sans, Helvetica Neue, sans-serif;
+  vertical-align: top;
+  line-height: 15px;
+  text-align: center;
+  text-decoration: none;
+  background: none;
+  background-color: @btn_vk;
+  color: @white;
+  border: 0;
+  border-radius: 2px;
+  box-sizing: border-box;
+  font: 13.3333px Arial;
+  &:hover {
+    background-color: @btn_vk_hover;
+    text-decoration: none;
+  }
+
+  &:active {
+    background-color: @btn_vk_active;
+    padding-top: 8px;
+    padding-bottom: 7px;
+  }
 }
 
 .status_active {
