@@ -70,6 +70,7 @@ function USERS_INIT($ignore_f_c = false)
                                 'auth' => true,
                                 'user' => $S_Response['response']['0']['data']['0']
                             );
+                            header("Location: " . PROJECT_URL);
                         }
                     } else {
                         $response = array(
@@ -114,6 +115,7 @@ function USERS_INIT($ignore_f_c = false)
                                 'auth' => true,
                                 'user' => $S_Response['response']['0']['data']['0']
                             );
+                            header("Location: " . PROJECT_URL);
                         }
                     } else {
                         $response = array(
@@ -331,7 +333,10 @@ function USER_GetList()
 
     $html_output = '<table>';
     $html_output .= '<tr>';
-    $html_output .= '<th>Исполнители</th>';
+    $html_output .= '<th>Исполнитель</th>';
+    $html_output .= '<th>Выполнил</th>';
+    $html_output .= '<th>Создал</th>';
+    $html_output .= '<th>Итого</th>';
     $html_output .= '</tr>';
     if (isset($query["response"]["0"]["data"]) && !empty($query["response"]["0"]["data"])) {
         foreach ($query["response"]["0"]["data"] as $order_key => $order_value) {
@@ -339,6 +344,28 @@ function USER_GetList()
             $html_output .= '<td>';
             $html_output .= '<a href="https://vk.com/' . $order_value['login'] . '" target="_blank">' . $order_value['name'] . '</a>';
             $html_output .= '</td>';
+
+            $completed_cnt = PS_CompletedByUser($order_value['id']);
+            if ($completed_cnt["error"] != "empty") {
+                $html_output .= '<td>';
+                $html_output .= $completed_cnt["data"]["0"]["cnt"];
+                $html_output .= '</td>';
+            }
+
+            $created_cnt = PS_CreatedByUser($order_value['id']);
+            if ($created_cnt["error"] != "empty") {
+                $html_output .= '<td>';
+                $html_output .= $created_cnt["data"]["0"]["cnt"];
+                $html_output .= '</td>';
+            }
+
+            $deploy_cnt = PS_InDeploy($order_value['id']);
+            if ($deploy_cnt["error"] != "empty") {
+                $html_output .= '<td>';
+                $html_output .= $deploy_cnt["data"]["0"]["cnt"];
+                $html_output .= '</td>';
+            }
+
             $html_output .= '</tr>';
         }
     }

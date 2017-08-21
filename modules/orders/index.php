@@ -39,7 +39,10 @@ if (isset($params['id']) && !empty($params['id'])) {
             }
         }
 
+        $title = "Заказы > {$data["name"]}";
+
         $content = "<h1>{$data["name"]}</h1>";
+        $content .= '<div class="a-main__order-panel">';
         $content .= '<div class="a-main__order-user">';
 
         $content .= '<div class="a-main__order-img"><a href="https://vk.com/' . $owner["login"] . '" target="_blank">';
@@ -53,6 +56,17 @@ if (isset($params['id']) && !empty($params['id'])) {
         $content .= '</div>';
 
         $content .= '</div>';
+
+        $user = USERS_GET_USER();
+
+        if ($user) {
+            if ($user['id'] != $data["owner"] && $data["contractor"] == 0) {
+                $hash = PS_Hash($user['login'] . $user["hash"] . "ps_start");
+                $content .= '<div class="a-main__order-start btn" onclick="orders.startOrder(this)" data-orderId="' . $data["id"] . '" data-hash="' . $hash . '">Начать выполнение задания</div>';
+            }
+        }
+
+        $content .= '</div>';
         $description = str_replace(PHP_EOL, "<br/>", $data["description"]);
         $description = str_replace('\r', "<br/>", $description);
         $description = str_replace('\n', "<br/>", $description);
@@ -64,17 +78,17 @@ if (isset($params['id']) && !empty($params['id'])) {
             $content .= '</div>';
         }
     } else {
+        $title = "Заказы";
         $content = "<h1>Заказ не найден</h1>";
     }
-    echo $content;
-
-} else if (isset($params['ps_create'])) {
-    $content .= 'wow';
-    echo $content;
 } else {
-    $list = '<div class="a-body_buttons">';
-    $list .= '<div class="btn" onclick="orders.createOrder();">Создать заказ</div>';
-    $list .= '</div>';
-    $list .= PS_GetList();
-    echo $list;
+    $title = "Заказы";
+    $content = null;
+    $user = USERS_GET_USER();
+    if ($user) {
+        $content .= '<div class="a-body_buttons">';
+        $content .= '<div class="btn" onclick="orders.createOrder();">Создать заказ</div>';
+        $content .= '</div>';
+    }
+    $content .= PS_GetList();
 }

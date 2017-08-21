@@ -19,12 +19,22 @@ $menu = array(
 );
 
 $auth = USERS_INIT();
+
+if (isset($auth['user'])) {
+    $deploy_cnt = PS_InDeploy($auth['user']['id']);
+    if ($deploy_cnt["data"]["0"]["cnt"] > 1) {
+        $menu['my'] = array(
+            'name' => 'Мои заказы',
+            'url' => PROJECT_URL . "/my"
+        );
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><?= (isset($menu[$module]["name"])) ? $menu[$module]["name"] : 'Orders'; ?></title>
+    <title><?= (isset($title)) ? $title : $menu[$module]["name"]; ?></title>
     <link rel="stylesheet" href="<?= PROJECT_URL ?>/assets/css/style.css">
     <script src="<?= PROJECT_URL ?>/assets/js/main.js"></script>
 </head>
@@ -66,8 +76,11 @@ $auth = USERS_INIT();
                 global $PaySystemConfig;
                 echo '<div class="a-main__user">';
                 echo '<img src="' . $auth['user']['img_50'] . '" alt="' . $auth['user']['name'] . '" />';
-                echo '<span>' . $auth['user']['name'] . '<br/>';
-                echo $auth['user']['balance'] . ' ' . $PaySystemConfig['currency'] . '</span>';
+                echo '<div class="a-main__balance">';
+                echo '<p>' . $auth['user']['name'] . '</p>';
+                echo '<span>' . $auth['user']['balance'] . ' ' . $PaySystemConfig['currency'] . '</span>';
+                echo '<span class="a-main__balance_add">Пополнить</span>';
+                echo '</div>';
                 echo '<a href="' . PROJECT_URL . '/auth?logout=yes">Выйти</a>';
                 echo '</div>';
             }

@@ -9,6 +9,8 @@
 if (!defined('CORE_INIT')) die('Core protection');
 
 #Устанавливаем код 404 в header
-http_response_code(404)
+http_response_code(404);
+
+$title = "Страница не найдена";
+$content = "Страница не найдена";
 ?>
-Страница не найдена

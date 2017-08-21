@@ -21,6 +21,20 @@ function State(status) {
     }
 }
 
+function ge(el) {
+    return (typeof el == 'string' || typeof el == 'number') ? document.getElementById(el) : el;
+}
+
+function trim(text) {
+    return (text || '').replace(/^\s+|\s+$/g, '');
+}
+
+function removeClass(obj, name) {
+    if (obj = ge(obj)) {
+        obj.className = trim((obj.className || '').replace((new RegExp('(\\s|^)' + name + '(\\s|$)')), ' '));
+    }
+}
+
 /*
  Функция для анимации плавного появления элемента
  Аналоговая из jQuery - $(element).fadeIn();
@@ -80,7 +94,11 @@ function showContent(object, element, loading, hash, set_class) {
                     }
                     object.parentElement.classList.add('active');
                 } else {
-                    var title = document.title + " > " + object.innerHTML.replace(/<[^>]+>/g, '');
+                    if (object && object.nodeType && object.nodeType === 1) {
+                        var title = document.title + " > " + object.innerHTML.replace(/<[^>]+>/g, '');
+                    } else {
+                        var title = document.title;
+                    }
                     updateTitle(title);
                 }
             }
@@ -218,10 +236,7 @@ var orders = {
                     e_modal_title_close.className = "va__modal-block_title-close";
 
                     e_modal_title_close.onclick = function () {
-                        var elements = document.getElementsByClassName(modal_class);
-                        while (elements.length > 0) {
-                            elements[0].parentNode.removeChild(elements[0]);
-                        }
+                        orders.deleteModal();
                     };
 
                     e_modal_form = e_modal_block.appendChild(document.createElement('div'));
@@ -247,8 +262,10 @@ var orders = {
                         for (var i = 0; i < formElements.length; i++) {
                             if (formElements[i].type !== "submit") {
                                 if (formElements[i].value.length === 0) {
-                                    //alert(formElements[i].name + " is empty");
                                     formElements[i].className += (formElements[i].className ? ' ' : '') + 'required';
+                                    formElements[i].onfocus = function () {
+                                        removeClass(this, 'required');
+                                    };
                                     status = false;
                                 } else {
                                     postData[formElements[i].name] = formElements[i].value;
@@ -260,12 +277,10 @@ var orders = {
                                 var e_response = JSON.parse(this);
                                 if (typeof e_response["error"] !== 'undefined' && e_response["error"] === "no") {
                                     showContent(e_response["url"], '.a-body', '.loading', e_response["e_hash"], false);
-                                    var elements = document.getElementsByClassName(modal_class);
-                                    while (elements.length > 0) {
-                                        elements[0].parentNode.removeChild(elements[0]);
-                                    }
+                                    updateTitle(document.title + " > " + formElements[0].value);
+                                    orders.deleteModal();
                                 } else {
-                                    alert(e_response["error_text"]);
+                                    orders.createError(e_response["error_text"])
                                 }
                                 State(false);
                             });
@@ -279,21 +294,32 @@ var orders = {
 
                     /* !Конец создания окна */
                 } else {
-                    alert(response["error_text"]);
+                    orders.createError(response["error_text"]);
                 }
                 State(false);
             });
         } else {
             /* delete item */
-            var elements = document.getElementsByClassName(modal_class);
-            while (elements.length > 0) {
-                elements[0].parentNode.removeChild(elements[0]);
-            }
+            orders.deleteModal();
             orders.createModal(get_url, post_url);
+        }
+    },
+    deleteModal: function () {
+        modal_class = "va__modal";
+        var elements = document.getElementsByClassName(modal_class);
+        while (elements.length > 0) {
+            elements[0].parentNode.removeChild(elements[0]);
         }
     },
     getPrice: function (obj, element) {
         element = QS(element)[0];
+        if (obj.value > 15000) {
+            obj.value = 15000;
+        }
+        if (!isNaN(parseFloat(obj.value))) {
+            obj.value = Math.round(obj.value);
+        }
+
         if (obj.value.length !== 0) {
             var postData = {price: obj.value};
             orders.ajax("/projects/project_1635/ajax/type/ps_get-price", postData, function () {
@@ -305,6 +331,37 @@ var orders = {
         } else {
             element.innerHTML = '';
         }
+    },
+    createError: function (text) {
+        var e_page = QS('.a-main')[0];
+        var error_class = "va__error";
+        var e_error = QS("." + error_class)[0];
+
+        if (!e_error) {
+            e_error = document.createElement('div');
+            e_error.className = error_class;
+            e_error.innerHTML = text;
+            e_page.appendChild(e_error);
+            setTimeout(orders.deleteError, 10000);
+        } else {
+            var elements = document.getElementsByClassName(error_class);
+            while (elements.length > 0) {
+                elements[0].parentNode.removeChild(elements[0]);
+            }
+            orders.createError(text);
+        }
+    },
+    deleteError: function () {
+        var error_class = "va__error";
+        var elements = document.getElementsByClassName(error_class);
+        while (elements.length > 0) {
+            elements[0].parentNode.removeChild(elements[0]);
+        }
+    },
+    startOrder: function (object) {
+        var orderId = object.getAttribute('data-orderId');
+        console.log(object);
+        console.log(orderId);
     }
 };
 

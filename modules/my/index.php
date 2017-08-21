@@ -2,11 +2,11 @@
 /**
  * Created by PhpStorm.
  * User: HOME
- * Date: 02.08.2017
- * Time: 21:32
+ * Date: 20.08.2017
+ * Time: 16:16
  */
 
 if (!defined('CORE_INIT')) die('Core protection');
 
-$title = "Исполнители";
-$content = USER_GetList();
+$title = "Мои заказы";
+$content = "test";

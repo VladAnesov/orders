@@ -50,6 +50,7 @@ for ($i = 0; $i < count($url_parts); $i++) {
 }
 
 $h_a_f = true;
+
 $current_hash = getHash(PROJECT_URL . "/" . $module);
 if (isset($_POST['VAHash']) && $_POST['VAHash'] == $current_hash) {
     $h_a_f = false;
@@ -60,10 +61,12 @@ if (isset($headers['VAAjax']) && $headers['VAAjax'] == 'yes') {
 }
 
 if ($h_a_f) {
-    require_once(PROJECT_LINK . "/tpl/header.php");
     require_once(PROJECT_LINK . "/modules/" . $module . "/index.php");
+    require_once(PROJECT_LINK . "/tpl/header.php");
+    echo $content;
     require_once(PROJECT_LINK . "/tpl/footer.php");
 } else {
     require_once(PROJECT_LINK . "/modules/" . $module . "/index.php");
+    echo $content;
 }
 ?>

@@ -17,27 +17,27 @@ $bd_users = array(
     /* пользователи */
     '1' => array(
         'user' => 'test_user1',
-        'password' => '***'
+        'password' => 'Ub0kFDhfix'
     ),
     /* заказы */
     '2' => array(
         'user' => 'test_user1',
-        'password' => '****'
+        'password' => 'Ub0kFDhfix'
     ),
     /* изменения статусов */
     '3' => array(
         'user' => 'test_user3',
-        'password' => '****'
+        'password' => 'wuJg3QFT3i'
     ),
     /* Транзакции */
     '4' => array(
         'user' => 'test_user4',
-        'password' => '****'
+        'password' => 'mSNJpI0Jld'
     ),
     /* хэш-активность */
     '5' => array(
         'user' => 'test_user5',
-        'password' => '****'
+        'password' => 'f6QeilddM8'
     )
 );
 

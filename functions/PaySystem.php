@@ -30,7 +30,7 @@ function PS_CreateOrderDialog()
 
         $data .= '<div class="va__modal_iblock">';
         $data .= '<div class="va__modal_iblock-title">Стоимость</div>';
-        $data .= '<input type="number" class="va-input" oninput="orders.getPrice(this, \'.va__price\');" min="' . $PaySystemConfig["min_price"] . '" max="' . $PaySystemConfig["max_price"] . '" name="cost" placeholder="Сумма в рублях" required/>';
+        $data .= '<input type="number" class="va-input" onkeyup="this.value=this.value.replace(/[^\d]/,\'\')" pattern="[0-9]{5}" oninput="orders.getPrice(this, \'.va__price\');" min="' . $PaySystemConfig["min_price"] . '" max="' . $PaySystemConfig["max_price"] . '" name="cost" placeholder="Сумма в рублях" required/>';
         $data .= '</div>';
 
         $data .= '<div class="va__modal_iblock">';
@@ -54,12 +54,152 @@ function PS_CreateOrderDialog()
     return $response;
 }
 
+function PS_InDeploy($userId)
+{
+    if (ctype_digit($userId)) {
+        $serverId = 1;
+        $serverDb = 'test_db2';
+
+        $select_array = array(
+            'orders' => array(
+                'select' => "COUNT(id) as cnt",
+                'where' => "`owner` = '{$userId}' OR `contractor` = '{$userId}'"
+            )
+        );
+
+        /* Проверка наличия привязки профиля */
+        $query = BD_select($select_array, $serverId, $serverDb);
+        if (isset($query["response"]["0"]["data"])) {
+            $data = $query["response"]["0"]["data"];
+            $response = array(
+                'error' => 'no',
+                'data' => $data
+            );
+        } else {
+            $response = array(
+                'error' => 'empty'
+            );
+        }
+    } else {
+        $response = array(
+            'error' => 'yes',
+            'error_text' => 'userid must be int value'
+        );
+    }
+    return $response;
+}
+
+function PS_CreatedByUser($userId)
+{
+    if (ctype_digit($userId)) {
+        $serverId = 1;
+        $serverDb = 'test_db2';
+
+        $select_array = array(
+            'orders' => array(
+                'select' => "COUNT(id) as cnt",
+                'where' => "`owner` = '{$userId}'"
+            )
+        );
+
+        /* Проверка наличия привязки профиля */
+        $query = BD_select($select_array, $serverId, $serverDb);
+        if (isset($query["response"]["0"]["data"])) {
+            $data = $query["response"]["0"]["data"];
+            $response = array(
+                'error' => 'no',
+                'data' => $data
+            );
+        } else {
+            $response = array(
+                'error' => 'empty'
+            );
+        }
+    } else {
+        $response = array(
+            'error' => 'yes',
+            'error_text' => 'userid must be int value'
+        );
+    }
+    return $response;
+}
+
+function PS_CompletedByUser($userId)
+{
+    if (ctype_digit($userId)) {
+        $serverId = 1;
+        $serverDb = 'test_db2';
+
+        $select_array = array(
+            'orders' => array(
+                'select' => "COUNT(id) as cnt",
+                'where' => "`contractor` = '{$userId}' AND `status` = '4'"
+            )
+        );
+
+        /* Проверка наличия привязки профиля */
+        $query = BD_select($select_array, $serverId, $serverDb);
+        if (isset($query["response"]["0"]["data"])) {
+            $data = $query["response"]["0"]["data"];
+            $response = array(
+                'error' => 'no',
+                'data' => $data
+            );
+        } else {
+            $response = array(
+                'error' => 'empty'
+            );
+        }
+    } else {
+        $response = array(
+            'error' => 'yes',
+            'error_text' => 'userid must be int value'
+        );
+    }
+    return $response;
+}
+
+function PS_getDeploysOnUser($userId)
+{
+    if (ctype_digit($userId)) {
+        $serverId = 1;
+        $serverDb = 'test_db2';
+
+        $select_array = array(
+            'orders' => array(
+                'select' => "COUNT(id), `status` as cnt",
+                'where' => "`contractor` = '{$userId}'"
+            )
+        );
+
+        /* Проверка наличия привязки профиля */
+        $query = BD_select($select_array, $serverId, $serverDb);
+        if (isset($query["response"]["0"]["data"])) {
+            $data = $query["response"]["0"]["data"];
+            $response = array(
+                'error' => 'no',
+                'data' => $data['0']
+            );
+        } else {
+            $response = array(
+                'error' => 'empty'
+            );
+        }
+    } else {
+        $response = array(
+            'error' => 'yes',
+            'error_text' => 'userid must be int value'
+        );
+    }
+    return $response;
+}
+
 function PS_CreateOrder($data)
 {
-    sleep(1);
     if ((!isset($data["name"]) || empty($data["name"])) ||
         (!isset($data["description"]) || empty($data["description"])) ||
         (!isset($data["cost"]) || empty($data["cost"])) ||
+        (!isset($data["hash"]) || empty($data["hash"])) ||
         empty($data)) {
         $response = array(
             'error' => 'yes',
@@ -80,31 +220,57 @@ function PS_CreateOrder($data)
                         'error_text' => "price is not numeric"
                     );
                 } else {
-                    $order_array = array(
-                        'name' => htmlspecialchars($data["name"]),
-                        'description' => htmlspecialchars($data['description']),
-                        'price' => $data['cost'],
-                        'owner' => $user['id'],
-                        'status' => '1',
-                        'stimestamp' => time()
-                    );
-                    $serverId = "1";
-                    $serverDb = "test_db2";
-                    $insert_query = BD_insert($order_array, 'orders', $serverId, $serverDb);
-                    if ($insert_query['status'] == "ok") {
-                        $e_url = PROJECT_URL . "/orders/id/" . $insert_query['userId'];
-                        $e_hash = getHash(PROJECT_URL . "/orders");
-                        $response = array(
-                            'error' => 'no',
-                            'status' => 'ok',
-                            'url' => $e_url,
-                            'e_hash' => $e_hash
-                        );
-                    } else {
+                    global $PaySystemConfig;
+                    if ($data['cost'] < $PaySystemConfig['min_price']) {
                         $response = array(
                             'error' => 'yes',
-                            'error_text' => $insert_query['status']
+                            'error_text' => "min price: " . $PaySystemConfig['min_price']
                         );
+                    } else if ($data['cost'] > $PaySystemConfig['max_price']) {
+                        $response = array(
+                            'error' => 'yes',
+                            'error_text' => "max price: " . $PaySystemConfig['max_price']
+                        );
+                    } else if (($user['balance'] - $data['cost']) <= 0) {
+                        $response = array(
+                            'error' => 'yes',
+                            'error_text' => "Недостаточно средств для создания заказа, пополните баланс."
+                        );
+                    } else {
+                        $ha_activity = HA_Create("ps_create", $data["hash"], $data);
+                        if ($ha_activity['error'] != "yes") {
+                            $order_array = array(
+                                'name' => htmlspecialchars($data["name"]),
+                                'description' => htmlspecialchars($data['description']),
+                                'price' => $data['cost'],
+                                'owner' => $user['id'],
+                                'status' => '1',
+                                'stimestamp' => time()
+                            );
+                            $serverId = "1";
+                            $serverDb = "test_db2";
+                            $insert_query = BD_insert($order_array, 'orders', $serverId, $serverDb);
+                            if ($insert_query['status'] == "ok") {
+                                $e_url = PROJECT_URL . "/orders/id/" . $insert_query['userId'];
+                                $e_hash = getHash(PROJECT_URL . "/orders");
+                                $response = array(
+                                    'error' => 'no',
+                                    'status' => 'ok',
+                                    'url' => $e_url,
+                                    'e_hash' => $e_hash
+                                );
+                            } else {
+                                $response = array(
+                                    'error' => 'yes',
+                                    'error_text' => $insert_query['status']
+                                );
+                            }
+                        } else {
+                            $response = array(
+                                'error' => 'yes',
+                                'error_text' => "You observed suspicious activity, please try again later"
+                            );
+                        }
                     }
                 }
             } else {
@@ -122,6 +288,18 @@ function PS_CreateOrder($data)
     }
 
     return $response;
+}
+
+function PS_StartOrder($data)
+{
+    if (empty($data)) {
+        $response = array(
+            'error' => 'yes',
+            'error_text' => 'data is empty'
+        );
+    } else {
+
+    }
 }
 
 function PS_GetList()
@@ -147,7 +325,7 @@ function PS_GetList()
     $html_output = '<table>';
     $html_output .= '<thead>';
     $html_output .= '<tr>';
-    $html_output .= '<th>Проект</th>';
+    $html_output .= '<th>Задача</th>';
     $html_output .= '<th>Создал</th>';
     $html_output .= '<th>Статус</th>';
     $html_output .= '<th>Стоимость</th>';
@@ -160,18 +338,27 @@ function PS_GetList()
             $price = PS_Price($order_value['price']);
 
             $user_owner = USER_GetByID($order_value["owner"]);
+            $user = USERS_GET_USER();
             $owner = $user_owner["response"]["0"]["data"]["0"];
 
             $html_output .= '<tr>';
             $html_output .= '<td>';
+            $html_output .= '<div class="clear_box">';
+            if ($user['id'] == $order_value["owner"]) {
+                $username = $owner['name'] . " (Вы)";
+            } else {
+                $username = $owner['name'];
+            }
+
             $html_output .= '<a href="' . $link . '" onclick="' . $link_js . '"><b>' . $order_value["name"] . '</b></a>';
-            $description = str_replace(PHP_EOL, " ", $order_value["description"]);
-            $description = str_replace('\r', " ", $description);
-            $description = str_replace('\n', " ", $description);
-            $html_output .= '<br/><p>' . $description . '</p>';
+//            $description = str_replace(PHP_EOL, " ", $order_value["description"]);
+//            $description = str_replace('\r', " ", $description);
+//            $description = str_replace('\n', " ", $description);
+//            $html_output .= '<br/><p>' . $description . '</p>';
+            $html_output .= '</div>';
             $html_output .= '</td>';
             $html_output .= '<td>';
-            $html_output .= '<a href="https://vk.com/' . $owner['login'] . '" target="_blank">' . $owner['name'] . '</a>';
+            $html_output .= '<a href="https://vk.com/' . $owner['login'] . '" target="_blank">' . $username . '</a>';
             $html_output .= '</td>';
             $html_output .= '<td>' . PS_GetStatus($order_value['status']) . '</td>';
             $html_output .= '<td>' . $price['price'] . ' ' . $PaySystemConfig['currency'] . '</td>';
@@ -210,31 +397,36 @@ function PS_Price($price)
 {
     global $PaySystemConfig;
 
-    if ($price < $PaySystemConfig['min_price'])
-        return $response['error'] = 'Min price: ' . $PaySystemConfig['min_price'];
+    if ($price < $PaySystemConfig['min_price']) {
+        $response = array(
+            'error' => 'Минимальная сумма: ' . $PaySystemConfig['min_price'] . " " . $PaySystemConfig['currency']
+        );
+    } else if ($price > $PaySystemConfig['max_price']) {
+        $response = array(
+            'error' => 'Максимальная сумма: ' . $PaySystemConfig['max_price'] . " " . $PaySystemConfig['currency']
+        );
+    } else {
 
-    if ($price > $PaySystemConfig['max_price'])
-        return $repsonse['error'] = 'Max price; ' . $PaySystemConfig['max_price'];
+        switch ($PaySystemConfig['percent_type']) {
+            case 'P':
+                $percent_cost = ($price * ($PaySystemConfig["percent_cost"] / 100));
+                $response = array(
+                    'price' => ($price - $percent_cost),
+                    'tax' => $percent_cost
+                );
+                break;
 
-    switch ($PaySystemConfig['percent_type']) {
-        case 'P':
-            $percent_cost = ($price * ($PaySystemConfig["percent_cost"] / 100));
-            $response = array(
-                'price' => ($price - $percent_cost),
-                'tax' => $percent_cost
-            );
-            break;
+            case 'S':
+                $response = array(
+                    'price' => ($price - $PaySystemConfig["percent_cost"]),
+                    'tax' => $PaySystemConfig["percent_cost"]
+                );
+                break;
 
-        case 'S':
-            $response = array(
-                'price' => ($price - $PaySystemConfig["percent_cost"]),
-                'tax' => $PaySystemConfig["percent_cost"]
-            );
-            break;
-
-        default:
-            $response['error'] = 'Settings error, set percent_type';
-            break;
+            default:
+                $response['error'] = 'Settings error, set percent_type';
+                break;
+        }
     }
 
     return $response;
