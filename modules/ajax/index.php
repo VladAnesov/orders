@@ -20,6 +20,10 @@ if (isset($params['type'])) {
             $response = PS_StartOrder($_POST);
             break;
 
+        case "ps_end_order":
+            $response = PS_EndOrder($_POST);
+            break;
+
         case "ps_get-price":
             $price = trim($_POST['price']);
             if (ctype_digit($price)) {
@@ -33,11 +37,11 @@ if (isset($params['type'])) {
                             'data' => "<b>" . $get_price["error"] . "</b>"
                         );
                     } else {
-                        $text = "Исполнитель получит: <b>{$get_price["price"]} {$PaySystemConfig['currency']}</b> ";
-                        $text .= "коммисия системы: <b>{$get_price["tax"]} {$PaySystemConfig['currency']}</b>";
+                        $text = "Стоимость заказа: <b>" . PS_Balance($get_price["price"], true) . "</b> ";
+                        $text .= "коммисия системы: <b>" . PS_Balance($get_price["tax"]) . "</b>";
                         switch ($PaySystemConfig['percent_type']) {
                             case 'P':
-                                $percent = " ({$PaySystemConfig["percent_cost"]}%)";
+                                $percent = "";
                                 break;
 
                             case 'S':
@@ -64,17 +68,25 @@ if (isset($params['type'])) {
             }
             break;
 
+        case "m_create":
+            $response = M_createModalAdd();
+            break;
+
+        case "m_create_data":
+            $response = M_add2user($_POST);
+            break;
+
         default:
             $response = array(
-                'status' => 'error',
-                'text' => 'type is empty'
+                'error' => 'yes',
+                'error_text' => 'type is empty'
             );
             break;
     }
 } else {
     $response = array(
-        'status' => 'error',
-        'text' => 'type not found'
+        'error' => 'yes',
+        'error_text' => 'type not found'
     );
 }
 

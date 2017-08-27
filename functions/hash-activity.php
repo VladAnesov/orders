@@ -35,7 +35,7 @@ function HA_Create($method, $hash, $data)
     $serverDb = "test_db5";
 
     $sql = "SELECT COUNT(id) as cnt FROM `hash_activity` WHERE 
-    (`timestamp` >= (NOW() - INTERVAL 120 SECOND)
+    (`timestamp` >= (NOW() - INTERVAL 20 SECOND)
     AND `method` = '{$order_array["method"]}'
     AND `hash` = '{$order_array["hash"]}'
     AND `data` = '{$order_array["data"]}')";
@@ -46,17 +46,29 @@ function HA_Create($method, $hash, $data)
             'error' => 'yes'
         );
     } else {
-        $insert_query = BD_insert($order_array, 'hash_activity', $serverId, $serverDb);
-        if ($insert_query['status'] == "ok") {
+        $sql = "SELECT COUNT(id) as cnt FROM `hash_activity` WHERE 
+        (`timestamp` >= (NOW() - INTERVAL 60 SECOND)
+        AND `method` = '{$order_array["method"]}'
+        AND `hash` = '{$order_array["hash"]}')";
+
+        $query = BD_query($sql, $serverId, $serverDb);
+        if ($query["response"]["0"]["cnt"] > 30) {
             $response = array(
-                'error' => 'no',
-                'error_text' => $insert_query['status']
+                'error' => 'yes'
             );
         } else {
-            $response = array(
-                'error' => 'yes',
-                'error_text' => $insert_query['status']
-            );
+            $insert_query = BD_insert($order_array, 'hash_activity', $serverId, $serverDb);
+            if ($insert_query['status'] == "ok") {
+                $response = array(
+                    'error' => 'no',
+                    'error_text' => $insert_query['status']
+                );
+            } else {
+                $response = array(
+                    'error' => 'yes',
+                    'error_text' => $insert_query['status']
+                );
+            }
         }
     }
     return $response;

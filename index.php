@@ -10,12 +10,17 @@ ini_set('display_errors', 'on');
 define('CORE_INIT', true);
 define('PROJECT_URL', '/projects/project_1635');
 define('PROJECT_LINK', $_SERVER['DOCUMENT_ROOT'] . PROJECT_URL);
+define('BALANCE_CLASS', '.a-main__balance-value');
+define('ORDER_CLASS', '.va__orderStatus');
+define('ORDER_ACTION_CLASS', '.va__orderAction');
+define('VERSION', 'Beta 2');
 
 $serverId = 1;
 $serverDb = 'test_db1';
 
 require_once(PROJECT_LINK . "/functions/hash.php");
 require_once(PROJECT_LINK . "/functions/PaySystem.php");
+require_once(PROJECT_LINK . "/functions/money.php");
 require_once(PROJECT_LINK . "/functions/users.php");
 require_once(PROJECT_LINK . "/functions/hash-activity.php");
 

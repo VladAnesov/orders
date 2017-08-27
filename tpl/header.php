@@ -22,7 +22,7 @@ $auth = USERS_INIT();
 
 if (isset($auth['user'])) {
     $deploy_cnt = PS_InDeploy($auth['user']['id']);
-    if ($deploy_cnt["data"]["0"]["cnt"] > 1) {
+    if ($deploy_cnt["data"]["0"]["cnt"] > 0) {
         $menu['my'] = array(
             'name' => 'Мои заказы',
             'url' => PROJECT_URL . "/my"
@@ -35,6 +35,7 @@ if (isset($auth['user'])) {
 <head>
     <meta charset="UTF-8">
     <title><?= (isset($title)) ? $title : $menu[$module]["name"]; ?></title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300&amp;subset=cyrillic" rel="stylesheet">
     <link rel="stylesheet" href="<?= PROJECT_URL ?>/assets/css/style.css">
     <script src="<?= PROJECT_URL ?>/assets/js/main.js"></script>
 </head>
@@ -75,11 +76,15 @@ if (isset($auth['user'])) {
             } else {
                 global $PaySystemConfig;
                 echo '<div class="a-main__user">';
+                echo '<div class="a-main__user-block">';
                 echo '<img src="' . $auth['user']['img_50'] . '" alt="' . $auth['user']['name'] . '" />';
                 echo '<div class="a-main__balance">';
                 echo '<p>' . $auth['user']['name'] . '</p>';
-                echo '<span>' . $auth['user']['balance'] . ' ' . $PaySystemConfig['currency'] . '</span>';
-                echo '<span class="a-main__balance_add">Пополнить</span>';
+                echo '<div class="a-main__balance-wrap">';
+                echo '<span class="a-main__balance-value">' . PS_Balance($auth['user']['balance']) . '</span>';
+                echo '<div class="a-main__balance_add" onclick="orders.createModalAddBalance();"></div>';
+                echo '</div>';
+                echo '</div>';
                 echo '</div>';
                 echo '<a href="' . PROJECT_URL . '/auth?logout=yes">Выйти</a>';
                 echo '</div>';

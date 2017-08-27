@@ -10,7 +10,7 @@ if (!defined('CORE_INIT')) die('Core protection');
 </div>
 <div class="a-footer">
     <div class="a-footer-block">
-        <p>Текущая версия: 0.1</p>
+        <p>Текущая версия: <?= VERSION ?></p>
     </div>
 </div>
 </div>

@@ -340,58 +340,114 @@ function USER_GetList()
     $html_output .= '</tr>';
     if (isset($query["response"]["0"]["data"]) && !empty($query["response"]["0"]["data"])) {
         foreach ($query["response"]["0"]["data"] as $order_key => $order_value) {
-            $html_output .= '<tr>';
-            $html_output .= '<td>';
-            $html_output .= '<a href="https://vk.com/' . $order_value['login'] . '" target="_blank">' . $order_value['name'] . '</a>';
-            $html_output .= '</td>';
-
-            $completed_cnt = PS_CompletedByUser($order_value['id']);
-            if ($completed_cnt["error"] != "empty") {
+            if ($order_value["id"] > 0) {
+                $html_output .= '<tr>';
                 $html_output .= '<td>';
-                $html_output .= $completed_cnt["data"]["0"]["cnt"];
+                $html_output .= '<a href="https://vk.com/' . $order_value['login'] . '" target="_blank">' . $order_value['name'] . '</a>';
                 $html_output .= '</td>';
-            }
 
-            $created_cnt = PS_CreatedByUser($order_value['id']);
-            if ($created_cnt["error"] != "empty") {
+                $completed_cnt = PS_CompletedByUser($order_value['id']);
+                if ($completed_cnt["error"] != "empty") {
+                    $html_output .= '<td>';
+                    $html_output .= $completed_cnt["data"]["0"]["cnt"];
+                    $html_output .= '</td>';
+                }
+
+                $created_cnt = PS_CreatedByUser($order_value['id']);
+                if ($created_cnt["error"] != "empty") {
+                    $html_output .= '<td>';
+                    $html_output .= $created_cnt["data"]["0"]["cnt"];
+                    $html_output .= '</td>';
+                }
+
+                $deploy_cnt = $completed_cnt["data"]["0"]["cnt"] + $created_cnt["data"]["0"]["cnt"];
                 $html_output .= '<td>';
-                $html_output .= $created_cnt["data"]["0"]["cnt"];
+                $html_output .= $deploy_cnt;
                 $html_output .= '</td>';
-            }
 
-            $deploy_cnt = PS_InDeploy($order_value['id']);
-            if ($deploy_cnt["error"] != "empty") {
-                $html_output .= '<td>';
-                $html_output .= $deploy_cnt["data"]["0"]["cnt"];
-                $html_output .= '</td>';
+                $html_output .= '</tr>';
             }
-
-            $html_output .= '</tr>';
         }
     }
     $html_output .= '</table>';
     return $html_output;
 }
 
-function USER_GetByID($id)
+function USER_UPDATE($id, $data, $ignore = false)
 {
-    if (empty($id))
-        return false;
-
     $serverId = 1;
     $serverDb = 'test_db1';
 
-    $id_sql = mysql_escape_string($id);
+    if ((int)$id < 0) {
+        $response = array(
+            'error' => 'yes',
+            'error_text' => 'id is empty'
+        );
+    } else if (empty($data)) {
+        $response = array(
+            'error' => 'yes',
+            'error_text' => 'data is empty'
+        );
+    } else if (!is_array($data)) {
+        $response = array(
+            'error' => 'yes',
+            'error_text' => 'data must be array'
+        );
+    } else {
+        $user = USER_GetByID($id);
+        $user_data = $user["response"]["0"]["data"]["0"];
+        if (isset($user_data["id"])) {
+            if ($ignore == false) {
+                foreach ($data as $key => $value) {
+                    $update_fields[mysql_escape_string($key)] = mysql_escape_string($value);
+                }
+            }
 
-    $select_array = array(
-        'users' => array(
-            'select' => "*",
-            'where' => "(`id`='{$id_sql}')"
-        )
-    );
+            $update_filter = "`id` = '" . $user_data['id'] . "'";
+            $update_query = BD_update('users', $update_fields, $update_filter, $serverId, $serverDb);
 
-    /* Проверка наличия привязки профиля */
-    $S_Response = BD_select($select_array, $serverId, $serverDb);
+            if ($update_query['status'] == "ok") {
+                $response = array(
+                    'error' => 'no',
+                    'data' => $update_query
+                );
+            } else {
+                /* Повтор запроса, в случае, если сервер mysql не отвечает, но не забываем игнорировать уже установку идов*/
+                $data = USER_UPDATE($id, $data, true);
+                $response = $data;
+                $response['try'][] = $data;
+            }
+        } else {
+            $response = array(
+                'error' => 'yes',
+                'error_text' => 'user not found'
+            );
+        }
+    }
+    return $response;
+}
 
-    return $S_Response;
+function USER_GetByID($id)
+{
+    if ((int)$id >= 0) {
+
+        $serverId = 1;
+        $serverDb = 'test_db1';
+
+        $id_sql = mysql_escape_string($id);
+
+        $select_array = array(
+            'users' => array(
+                'select' => "*",
+                'where' => "(`id`='{$id_sql}')"
+            )
+        );
+
+        /* Проверка наличия привязки профиля */
+        $S_Response = BD_select($select_array, $serverId, $serverDb);
+
+        return $S_Response;
+    } else {
+        return false;
+    }
 }

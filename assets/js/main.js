@@ -22,11 +22,34 @@ function State(status) {
 }
 
 function ge(el) {
-    return (typeof el == 'string' || typeof el == 'number') ? document.getElementById(el) : el;
+    return (typeof el === 'string' || typeof el === 'number') ? document.getElementById(el) : el;
+}
+
+function ga(el) {
+    return (typeof el === 'string' || typeof el === 'number') ? QS(el) : el;
 }
 
 function trim(text) {
     return (text || '').replace(/^\s+|\s+$/g, '');
+}
+
+window.whitespaceRegex = /[\t\r\n\f]/g;
+
+function hasClass(obj, name) {
+    obj = ge(obj);
+    if (obj &&
+        obj.nodeType === 1 &&
+        (" " + obj.className + " ").replace(window.whitespaceRegex, " ").indexOf(" " + name + " ") >= 0) {
+        return true;
+    }
+
+    return false;
+}
+
+function addClass(obj, name) {
+    if ((obj = ge(obj)) && !hasClass(obj, name)) {
+        obj.className = (obj.className ? obj.className + ' ' : '') + name;
+    }
 }
 
 function removeClass(obj, name) {
@@ -55,6 +78,19 @@ function fadeIn(element, max_opacity) {
     };
 
     tick();
+}
+
+function fadeOut(element) {
+    var op = 0.1;  // initial opacity
+    element.style.display = 'block';
+    var timer = setInterval(function () {
+        if (op >= 1) {
+            clearInterval(timer);
+        }
+        element.style.opacity = op;
+        element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+        op += op * 0.1;
+    }, 10);
 }
 
 /*
@@ -207,8 +243,9 @@ var orders = {
         var postData = "/projects/project_1635/ajax/type/ps_create_data";
         orders.createModal(getModal, postData);
     },
-    createModal: function (get_url, post_url) {
+    createModal: function (get_url, post_url, width) {
         event.preventDefault();
+        width = typeof width !== 'undefined' ? width : 700;
         State(true);
         var e_page = QS('.a-main')[0];
         var modal_class = "va__modal";
@@ -225,6 +262,7 @@ var orders = {
                     /* создаем сам блок */
                     e_modal_block = e_modal.appendChild(document.createElement('div'));
                     e_modal_block.className = "va__modal-block";
+                    e_modal_block.style.width = width + "px";
 
                     /* Суем внутрь три блока, тайтл, форма, кнопки */
                     e_modal_title = e_modal_block.appendChild(document.createElement('div'));
@@ -242,6 +280,9 @@ var orders = {
                     e_modal_form = e_modal_block.appendChild(document.createElement('div'));
                     e_modal_form.className = "va__modal-block_form";
                     e_modal_form_inner = e_modal_form.appendChild(document.createElement('form'));
+                    e_modal_form_inner.onsubmit = function () {
+                        event.preventDefault();
+                    };
                     e_modal_form_inner.innerHTML = response["data"];
 
                     e_modal_buttons = e_modal_block.appendChild(document.createElement('div'));
@@ -262,7 +303,7 @@ var orders = {
                         for (var i = 0; i < formElements.length; i++) {
                             if (formElements[i].type !== "submit") {
                                 if (formElements[i].value.length === 0) {
-                                    formElements[i].className += (formElements[i].className ? ' ' : '') + 'required';
+                                    addClass(formElements[i], 'required');
                                     formElements[i].onfocus = function () {
                                         removeClass(this, 'required');
                                     };
@@ -276,11 +317,28 @@ var orders = {
                             orders.ajax(post_url, postData, function () {
                                 var e_response = JSON.parse(this);
                                 if (typeof e_response["error"] !== 'undefined' && e_response["error"] === "no") {
-                                    showContent(e_response["url"], '.a-body', '.loading', e_response["e_hash"], false);
-                                    updateTitle(document.title + " > " + formElements[0].value);
+                                    if (typeof e_response["url"] !== 'undefined' && typeof e_response["e_hash"] !== 'undefined') {
+                                        showContent(e_response["url"], '.a-body', '.loading', e_response["e_hash"], false);
+                                        if (typeof e_response["title"] !== 'undefined') {
+                                            updateTitle(document.title + " > " + e_response["title"]);
+                                        }
+                                    }
+
+                                    if (typeof e_response["update"] !== 'undefined') {
+                                        if (isObject(e_response["update"])) {
+                                            each(e_response["update"], function (key, value) {
+                                                var element = ga(key)[0];
+                                                element.innerHTML = value;
+                                            });
+                                        }
+                                    }
+
+                                    if (typeof e_response["htmlText"] !== 'undefined') {
+                                        orders.showBaloon(e_response["htmlText"]);
+                                    }
                                     orders.deleteModal();
                                 } else {
-                                    orders.createError(e_response["error_text"])
+                                    orders.createError(e_response["error_text"]);
                                 }
                                 State(false);
                             });
@@ -301,7 +359,7 @@ var orders = {
         } else {
             /* delete item */
             orders.deleteModal();
-            orders.createModal(get_url, post_url);
+            orders.createModal(get_url, post_url, width);
         }
     },
     deleteModal: function () {
@@ -358,10 +416,97 @@ var orders = {
             elements[0].parentNode.removeChild(elements[0]);
         }
     },
+    showBaloon: function (text) {
+        var e_page = QS('.a-main')[0];
+        var baloon_class = "top_result_baloon_wrap position_center";
+        var baloon_inner_class = "top_result_baloon";
+        var e_baloon = QS("." + baloon_class)[0];
+
+        if (!e_baloon) {
+            e_baloon = document.createElement('div');
+            e_baloon.className = baloon_class;
+            e_baloon_inner = e_baloon.appendChild(document.createElement('div'));
+            e_baloon_inner.className = baloon_inner_class;
+            e_baloon_inner.innerHTML = text;
+            e_page.appendChild(e_baloon);
+            setTimeout(orders.deleteBaloon, 5000);
+        } else {
+            var elements = document.getElementsByClassName(baloon_class);
+            while (elements.length > 0) {
+                elements[0].parentNode.removeChild(elements[0]);
+            }
+            orders.showBaloon(text);
+        }
+    },
+    deleteBaloon: function () {
+        var baloon_class = "top_result_baloon_wrap";
+        var elements = document.getElementsByClassName(baloon_class);
+        while (elements.length > 0) {
+            elements[0].parentNode.removeChild(elements[0]);
+        }
+    },
     startOrder: function (object) {
+        State(true);
         var orderId = object.getAttribute('data-orderId');
-        console.log(object);
-        console.log(orderId);
+        var orderHash = object.getAttribute('data-hash');
+        var postUrl = "/projects/project_1635/ajax/type/ps_start_order";
+
+        orders.ajax(postUrl, {id: orderId, hash: orderHash}, function () {
+            var e_response = JSON.parse(this);
+            if (typeof e_response["error"] !== 'undefined' && e_response["error"] === "no") {
+                if (typeof e_response["update"] !== 'undefined') {
+                    if (isObject(e_response["update"])) {
+                        each(e_response["update"], function (key, value) {
+                            var element = ga(key)[0];
+                            element.innerHTML = value;
+                        });
+                    }
+                }
+                if (typeof e_response["htmlText"] !== 'undefined') {
+                    orders.showBaloon(e_response["htmlText"]);
+                }
+            } else {
+                orders.createError(e_response["error_text"]);
+            }
+            State(false);
+        });
+    },
+    endOrder: function (object) {
+        State(true);
+        var orderId = object.getAttribute('data-orderId');
+        var orderHash = object.getAttribute('data-hash');
+        var postUrl = "/projects/project_1635/ajax/type/ps_end_order";
+
+        orders.ajax(postUrl, {id: orderId, hash: orderHash}, function () {
+            var e_response = JSON.parse(this);
+            if (typeof e_response["error"] !== 'undefined' && e_response["error"] === "no") {
+                if (typeof e_response["update"] !== 'undefined') {
+                    if (isObject(e_response["update"])) {
+                        each(e_response["update"], function (key, value) {
+                            var element = ga(key)[0];
+                            element.innerHTML = value;
+                        });
+                    }
+                }
+            } else {
+                orders.createError(e_response["error_text"]);
+            }
+            State(false);
+        });
+    },
+    createModalAddBalance: function () {
+        var getModal = "/projects/project_1635/ajax/type/m_create";
+        var postData = "/projects/project_1635/ajax/type/m_create_data";
+        orders.createModal(getModal, postData, 300);
+    },
+    minMax: function (object, min, max) {
+        if (object.value > max) {
+            object.value = max;
+        }
+
+        if (object.value < min) {
+            object.value = min;
+        }
     }
 };
 

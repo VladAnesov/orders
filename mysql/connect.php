@@ -145,14 +145,46 @@ function BD_select($array, $serverid, $database)
 
         $query = "SELECT {$fields} FROM `{$table}` WHERE {$filter}";
 
-        $response = array('status' => 'ok');
+        $response['response'][$num]['status'] = 'ok';
         $db = BD_Connect($bd_array[$serverid], $bd_users[$bd_tables[$database]]['user'], $bd_users[$bd_tables[$database]]['password'], $database);
-        $result = mysql_query($query) or $response['status'] = 'Запрос не удался: ' . mysql_error() . ' SQL:' . $query;
+        $result = mysql_query($query) or $response['response'][$num]['status'] = 'Запрос не удался: ' . mysql_error() . ' SQL:' . $query;
         while ($line = mysql_fetch_array($result, MYSQL_ASSOC)) {
             $response['response'][$num]['data'][] = $line;
         }
         mysql_free_result($result);
 
+        $num++;
+    }
+
+    mysql_close($db);
+    return $response;
+}
+
+function BD_select_rows($array, $serverid, $database)
+{
+    global $bd_array;
+    global $bd_users;
+    global $bd_tables;
+
+    if (!is_array($array)) {
+        return false;
+    }
+
+    $num = 0;
+    foreach ($array as $k_1 => $v_1) {
+        $table = mysql_escape_string($k_1);
+        $fields = mysql_escape_string($v_1['select']);
+        $filter = $v_1['where'];
+
+        $query = "SELECT {$fields} FROM `{$table}` WHERE {$filter}";
+
+        $response["response"][$num]['status'] = 'ok';
+        $db = BD_Connect($bd_array[$serverid], $bd_users[$bd_tables[$database]]['user'], $bd_users[$bd_tables[$database]]['password'], $database);
+        $result = mysql_query($query) or $response["response"][$num]['status'] = 'Запрос не удался: ' . mysql_error() . ' SQL:' . $query;
+        if ($response["response"][$num]['status'] == 'ok') {
+            $response["response"][$num]['rows'] = mysql_num_rows($result);
+        }
+        mysql_free_result($result);
         $num++;
     }
 
