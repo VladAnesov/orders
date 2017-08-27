@@ -21,7 +21,19 @@ if (isset($params['type'])) {
             break;
 
         case "ps_end_order":
+            $response = PS_EndOrderModal($_POST);
+            break;
+
+        case "ps_end_order_data":
             $response = PS_EndOrder($_POST);
+            break;
+
+        case "ps_accept_order":
+            $response = PS_processOrder("accept", $_POST);
+            break;
+
+        case "ps_decline_order":
+            $response = PS_processOrder("decline", $_POST);
             break;
 
         case "ps_get-price":

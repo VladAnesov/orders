@@ -13,11 +13,13 @@ define('PROJECT_LINK', $_SERVER['DOCUMENT_ROOT'] . PROJECT_URL);
 define('BALANCE_CLASS', '.a-main__balance-value');
 define('ORDER_CLASS', '.va__orderStatus');
 define('ORDER_ACTION_CLASS', '.va__orderAction');
-define('VERSION', 'Beta 2');
+define('ORDER_COMMENT', '.va__orderComment');
+define('VERSION', 'Beta 2.1');
 
 $serverId = 1;
 $serverDb = 'test_db1';
 
+require_once(PROJECT_LINK . "/functions/text.php");
 require_once(PROJECT_LINK . "/functions/hash.php");
 require_once(PROJECT_LINK . "/functions/PaySystem.php");
 require_once(PROJECT_LINK . "/functions/money.php");

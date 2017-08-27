@@ -21,13 +21,15 @@ $menu = array(
 $auth = USERS_INIT();
 
 if (isset($auth['user'])) {
-    $deploy_cnt = PS_InDeploy($auth['user']['id']);
-    if ($deploy_cnt["data"]["0"]["cnt"] > 0) {
-        $menu['my'] = array(
-            'name' => 'Мои заказы',
-            'url' => PROJECT_URL . "/my"
-        );
-    }
+    $menu['my'] = array(
+        'name' => 'Мои заказы',
+        'url' => PROJECT_URL . "/my"
+    );
+
+    $menu['profile'] = array(
+        'name' => 'Мой профиль',
+        'url' => PROJECT_URL . "/profile"
+    );
 }
 ?>
 <!DOCTYPE html>

@@ -243,16 +243,17 @@ var orders = {
         var postData = "/projects/project_1635/ajax/type/ps_create_data";
         orders.createModal(getModal, postData);
     },
-    createModal: function (get_url, post_url, width) {
+    createModal: function (get_url, post_url, width, post) {
         event.preventDefault();
         width = typeof width !== 'undefined' ? width : 700;
+        post = typeof post !== 'undefined' ? post : {};
         State(true);
         var e_page = QS('.a-main')[0];
         var modal_class = "va__modal";
         var e_modal = QS("." + modal_class)[0];
 
         if (!e_modal) {
-            orders.ajax(get_url, {test: 'test'}, function () {
+            orders.ajax(get_url, post, function () {
                 var response = JSON.parse(this);
                 if (typeof response["error"] !== 'undefined' && response["error"] === "no") {
                     /* Создание окна */
@@ -472,13 +473,36 @@ var orders = {
         });
     },
     endOrder: function (object) {
+        var orderId = object.getAttribute('data-orderId');
+        var orderHash = object.getAttribute('data-hash');
+        var postQuery = {id: orderId, hash: orderHash};
+
+        var getModal = "/projects/project_1635/ajax/type/ps_end_order";
+        var postData = "/projects/project_1635/ajax/type/ps_end_order_data";
+        orders.createModal(getModal, postData, 700, postQuery);
+    },
+    acceptOrder: function (object) {
         State(true);
         var orderId = object.getAttribute('data-orderId');
         var orderHash = object.getAttribute('data-hash');
-        var postUrl = "/projects/project_1635/ajax/type/ps_end_order";
+        var postUrl = "/projects/project_1635/ajax/type/ps_accept_order";
+        var postData = {id: orderId, hash: orderHash};
 
-        orders.ajax(postUrl, {id: orderId, hash: orderHash}, function () {
+        orders.processOrder(postUrl, postData);
+    },
+    declineOrder: function (object) {
+        State(true);
+        var orderId = object.getAttribute('data-orderId');
+        var orderHash = object.getAttribute('data-hash');
+        var postUrl = "/projects/project_1635/ajax/type/ps_decline_order";
+        var postData = {id: orderId, hash: orderHash};
+
+        orders.processOrder(postUrl, postData);
+    },
+    processOrder: function (postUrl, postData) {
+        orders.ajax(postUrl, postData, function () {
             var e_response = JSON.parse(this);
+            console.log(e_response);
             if (typeof e_response["error"] !== 'undefined' && e_response["error"] === "no") {
                 if (typeof e_response["update"] !== 'undefined') {
                     if (isObject(e_response["update"])) {
@@ -487,6 +511,9 @@ var orders = {
                             element.innerHTML = value;
                         });
                     }
+                }
+                if (typeof e_response["htmlText"] !== 'undefined') {
+                    orders.showBaloon(e_response["htmlText"]);
                 }
             } else {
                 orders.createError(e_response["error_text"]);

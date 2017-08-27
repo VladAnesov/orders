@@ -11,6 +11,9 @@
 @btn_vk_hover: #6888ad;
 @btn_vk_active: #5779a1;
 
+@btn_vk_second-bg: #e5ebf1;
+@btn_vk_second-color: #55677d;
+
 @modal_title: #656565;
 
 @red_area: #f5d4d4;
@@ -336,7 +339,7 @@ td {
 .a-main__order-contractor {
   border-top: 1px solid @gray;
   display: flex;
-  padding-top: 10px;
+  padding: 10px 0;
   align-items: flex-start;
   p {
     margin: 10px 0 0 0;
@@ -411,7 +414,7 @@ td {
       padding: 20px 25px;
       .va__modal_iblock {
         display: flex;
-        align-items: center;
+        align-items: baseline;
         justify-content: space-between;
         margin-bottom: 20px;
         &:nth-last-child(2) {
@@ -498,6 +501,11 @@ td {
     padding-top: 8px;
     padding-bottom: 7px;
   }
+
+  &.second {
+    background-color: @btn_vk_second-bg;
+    color: @btn_vk_second-color;
+  }
 }
 
 .va__error {
@@ -545,5 +553,22 @@ td {
     line-height: 160%;
     word-wrap: break-word;
     font-size: 13px;
+  }
+}
+
+.va__orderComment {
+  h4 {
+    margin: 0;
+    padding: 10px 0 0 0;
+    border-top: 1px solid @border_line;
+  }
+}
+
+.va__orderAction {
+  div {
+    margin-right: 10px;
+    &:last-child {
+      margin-right: 0;
+    }
   }
 }

@@ -357,7 +357,7 @@ function PS_StartOrder($data)
             $check_array = array(
                 'orders' => array(
                     'select' => "id",
-                    'where' => "`contractor` = '{$user['id']}'"
+                    'where' => "`contractor` = '{$user['id']}' and `status` = '2'"
                 )
             );
 
@@ -371,18 +371,9 @@ function PS_StartOrder($data)
                         'error_text' => 'У Вас уже есть активные задачи, сначала закончите их.',
                     );
                 } else {
-
-                    $select_array = array(
-                        'orders' => array(
-                            'select' => "`status`, `name`, `price`",
-                            'where' => "`id` = '{$orderId}'"
-                        )
-                    );
-
-                    $query = BD_select($select_array, $serverId, $serverDb);
-
-                    if (isset($query["response"]["0"]["data"])) {
-                        $order_data = $query["response"]["0"]["data"]["0"];
+                    $order_data = PS_GetOrderByID($orderId);
+                    if (isset($order_data["response"]["0"]["data"])) {
+                        $order_data = $order_data["response"]["0"]["data"]["0"];
 
                         $price_check = PS_Price($order_data['price']);
                         if (($user['balance'] + $price_check['price']) > $PaySystemConfig['max_price']) {
@@ -404,18 +395,15 @@ function PS_StartOrder($data)
                                             $action = PS_CreateOrderAction($orderId, $user['id']);
                                             $response = array(
                                                 'error' => 'no',
-                                                'status' => 'ok'
+                                                'status' => 'ok',
+                                                'update' => array(
+                                                    ORDER_CLASS => PS_StyleStatus($new_status),
+                                                )
                                             );
 
                                             if ($action["error"] == "no") {
-                                                $response['update'] = array(
-                                                    ORDER_CLASS => PS_StyleStatus($new_status),
-                                                    ORDER_ACTION_CLASS => $action['content']
-                                                );
+                                                $response['update'][ORDER_ACTION_CLASS] = $action['content'];
                                             } else {
-                                                $response['update'] = array(
-                                                    ORDER_CLASS => PS_StyleStatus($new_status)
-                                                );
                                                 $response['action_create_error'] = $action["error_text"];
                                             }
 
@@ -449,11 +437,193 @@ function PS_StartOrder($data)
                         );
                     }
                 }
+            } else {
+                $response = array(
+                    'error' => 'yes',
+                    'error_text' => $check_rows['status'],
+                );
             }
         } else {
             $response = array(
                 'error' => 'yes',
                 'error_text' => 'Вы не авторизованы',
+            );
+        }
+    }
+    return $response;
+}
+
+function PS_processOrder($process, $data)
+{
+    if (empty($data) && !is_array($data)) {
+        $response = array(
+            'error' => 'yes',
+            'error_text' => 'data must be array'
+        );
+    } else {
+        foreach ($data as $k => $v) {
+            if (!is_array($v) && !is_array($k)) {
+                $data[mysql_escape_string(trim($k))] = mysql_escape_string(trim($v));
+            }
+        }
+
+        $user = USERS_GET_USER();
+        if ($user) {
+            switch ($process) {
+                case "accept":
+                    $data['process_info'] = array(
+                        'setStatus' => 4,
+                        'method' => "ps_accept_order"
+                    );
+                    $response = PS_processOrder("process", $data);
+                    break;
+
+                case "decline":
+                    $data['process_info'] = array(
+                        'setStatus' => 5,
+                        'method' => "ps_decline_order"
+                    );
+                    $response = PS_processOrder("process", $data);
+                    break;
+
+                case "process":
+                    $method = mysql_escape_string(trim($data['process_info']['method']));
+                    $orderId = intval($data['id']);
+                    $order_data = PS_GetOrderByID($orderId);
+                    if (isset($order_data["response"]["0"]["data"])) {
+                        $order_data = $order_data["response"]["0"]["data"]["0"];
+
+                        if ($order_data['status'] == 3) {
+                            if ($order_data['owner'] == $user['id']) {
+                                $hash_verify = PS_Hash($user['login'] . $orderId . $user["hash"] . $method);
+                                if ($data['hash'] == $hash_verify) {
+                                    $ha_activity = HA_Create($method, $data["hash"], $data);
+                                    if ($ha_activity['error'] != "yes") {
+                                        if (isset($data['process_info']) && is_array($data['process_info'])) {
+                                            foreach ($data['process_info'] as $k => $v) {
+                                                if (!is_array($v) || !is_array($k)) {
+                                                    $data['process_info'][mysql_escape_string(trim($k))] = mysql_escape_string(trim($v));
+                                                }
+                                            }
+
+                                            $end_process = false;
+                                            $newStatus = intval($data['process_info']['setStatus']);
+
+                                            switch ($newStatus) {
+                                                case 4:
+                                                    /* Переводим деньги пользователю */
+                                                    $e_price = PS_Price($order_data["price"]);
+
+                                                    $pay_level_1 = M_createTransaction("order_payee", $e_price["price"], 0, $order_data['contractor']);
+                                                    if ($pay_level_1["error"] == "no") {
+                                                        $end_process = true;
+                                                        $response_payment['htmlText'] = 'Вы приняли работу исполнителя. Ему переведена сумма.';
+                                                    } else {
+                                                        $response = array(
+                                                            'error' => 'yes',
+                                                            'error_text' => $pay_level_1['error_text']
+                                                        );
+                                                    }
+                                                    break;
+
+                                                case 5:
+                                                    /* Возврат денег за задание */
+                                                    $e_price = PS_Price($order_data["price"]);
+
+                                                    $pay_level_1 = M_createTransaction("order_refund", $e_price["price"], 0, $order_data['owner']);
+                                                    if ($pay_level_1["error"] == "no") {
+                                                        $pay_level_2 = M_createTransaction("order_refund_tax", $e_price["tax"], 0, $order_data['owner']);
+                                                        if ($pay_level_2["error"] == "no") {
+                                                            $end_process = true;
+                                                            $response['update'][BALANCE_CLASS] = PS_Balance($pay_level_2['payee_balance']);
+                                                            $response['htmlText'] = 'Вы не приняли работу, деньги будут вам возвращены Вам.';
+                                                        } else {
+                                                            $response = array(
+                                                                'error' => 'yes',
+                                                                'error_text' => $pay_level_2['error_text']
+                                                            );
+                                                        }
+                                                    } else {
+                                                        $response = array(
+                                                            'error' => 'yes',
+                                                            'error_text' => $pay_level_1['error_text']
+                                                        );
+                                                    }
+                                                    break;
+                                            }
+
+                                            /* действия с заказом, если транзакции пройдены */
+                                            if ($end_process) {
+                                                $updateOrder = array(
+                                                    'status' => $newStatus
+                                                );
+                                                $change_response = PS_ChangeStatus($orderId, $newStatus, $updateOrder);
+                                                if ($change_response["error"] == "no") {
+                                                    $action = PS_CreateOrderAction($orderId, $user['id']);
+                                                    $response['error'] = 'no';
+                                                    $response['update'][ORDER_CLASS] = PS_StyleStatus($newStatus);
+
+                                                    if ($action["error"] == "no") {
+                                                        $response['update'][ORDER_ACTION_CLASS] = $action['content'];
+                                                    } else {
+                                                        $response['action_create_error'] = $action["error_text"];
+                                                    }
+                                                } else {
+                                                    $response = $change_response;
+                                                }
+                                                //$response = array_merge($response, $response_payment);
+                                            } else {
+                                                $response['error'] = 'yes';
+                                            }
+                                        } else {
+                                            $response = array(
+                                                'error' => 'yes',
+                                                'error_text' => 'банан'
+                                            );
+                                        }
+                                    } else {
+                                        $response = array(
+                                            'error' => 'yes',
+                                            'error_text' => "[005] You observed suspicious activity, please try again later"
+                                        );
+                                    }
+                                } else {
+                                    $response = array(
+                                        'error' => 'yes',
+                                        'error_text' => 'invalid hash',
+                                    );
+                                }
+                            } else {
+                                $response = array(
+                                    'error' => 'yes',
+                                    'error_text' => 'Ошибка доступа'
+                                );
+                            }
+                        } else {
+                            $response = array(
+                                'error' => 'yes',
+                                'error_text' => 'Метод доступен только для заказов ожидающих подтверждения'
+                            );
+                        }
+                    } else {
+                        $response = array(
+                            'error' => 'yes',
+                            'error_text' => 'PSP1 Заказ #' . $orderId . ' не найден'
+                        );
+                    }
+                    break;
+
+                default:
+                    $response = array(
+                        'error' => 'yes',
+                        'error_text' => 'Process not found'
+                    );
+                    break;
+            }
+        } else {
+            $response = array(
+                'error' => 'yes',
+                'error_text' => 'Вы не авторизованы'
             );
         }
     }
@@ -470,29 +640,127 @@ function PS_EndOrder($data)
         );
     } else {
         $user = USERS_GET_USER();
+        $orderId = intval($data['id']);
+        $new_status = 3;
+
         if ($user) {
             foreach ($data as $k => $v) {
-                $data[intval($k)] = intval($v);
+                $data[mysql_escape_string(trim($k))] = mysql_escape_string(trim($v));
             }
-            $orderId = intval($data['id']);
-            $new_status = 1;
 
-            $updateOrder = array(
-                'contractor' => 0
-            );
+            $order_data = PS_GetOrderByID($orderId);
+            if (isset($order_data["response"]["0"]["data"])) {
+                $order_data = $order_data["response"]["0"]["data"]["0"];
 
-            $change_status = PS_ChangeStatus($orderId, $new_status, $updateOrder);
+                if ($order_data['status'] == $new_status) {
+                    $response = array(
+                        'error' => 'yes',
+                        'error_text' => 'Заказ уже ожидает модерации от заказчика',
+                    );
+                } else {
+                    if ($order_data['status'] == 2) {
+                        $hash_verify = PS_Hash($user['login'] . $orderId . $user["hash"] . $method);
+                        if ($data['hash'] == $hash_verify) {
+                            $ha_activity = HA_Create($method, $data["hash"], $data);
+                            if ($ha_activity['error'] != "yes") {
+                                $updateOrder = array(
+                                    'comment' => htmlspecialchars($data['comment'])
+                                );
+
+                                $change_status = PS_ChangeStatus($orderId, $new_status, $updateOrder);
+                                if ($change_status["error"] == "no") {
+                                    $action = PS_CreateOrderAction($orderId, $user['id']);
+                                    $getComment = PS_GetComment($user['id'], $orderId);
+                                    $response = array(
+                                        'error' => 'no',
+                                        'status' => 'ok',
+                                        'update' => array(
+                                            ORDER_CLASS => PS_StyleStatus($new_status)
+                                        )
+                                    );
+
+                                    if ($action["error"] == "no") {
+                                        $response['update'][ORDER_ACTION_CLASS] = $action['content'];
+                                    } else {
+                                        $response['action_end_error'] = $action["error_text"];
+                                    }
+
+                                    if ($getComment["error"] == "no") {
+                                        $response['update'][ORDER_COMMENT] = $getComment['data'];
+                                    } else {
+                                        $response['comment_end_error'] = $getComment["error_text"];
+                                    }
+
+                                    $response['htmlText'] = 'Ждите одобрения заказчика';
+                                } else {
+                                    $response = $change_status;
+                                }
+                            } else {
+                                $response = array(
+                                    'error' => 'yes',
+                                    'error_text' => "[003] You observed suspicious activity, please try again later"
+                                );
+                            }
+                        } else {
+                            $response = array(
+                                'error' => 'yes',
+                                'error_text' => 'invalid hash',
+                            );
+                        }
+                    } else {
+                        $response = array(
+                            'error' => 'yes',
+                            'error_text' => 'Заказ не выполняется',
+                        );
+                    }
+                }
+            } else {
+                $response = array(
+                    'error' => 'yes',
+                    'error_text' => 'order #' . $orderId . ' not found',
+                );
+            }
+        } else {
             $response = array(
                 'error' => 'yes',
-                'error_text' => 'ТЕСТОВЫЙ РЕЖИМ: Задача вернута снова доступна для старта заказа',
-                'test' => $change_status
+                'error_text' => 'Вы не авторизованы',
             );
         }
     }
     return $response;
 }
 
-function PS_GetList($filter = false)
+function PS_EndOrderModal($post)
+{
+    $user = USERS_GET_USER();
+    if (isset($user["id"])) {
+        foreach ($post as $k => $v) {
+            $post[mysql_escape_string(trim($k))] = mysql_escape_string(trim($v));
+        }
+
+        $data = '<div class="va__modal_iblock">';
+        $data .= '<div class="va__modal_iblock-title">Комментарий</div>';
+        $data .= '<textarea class="va-textarea" name="comment" placeholder="Напишите о проделанной работе" required></textarea>';
+        $data .= '</div>';
+        $data .= '<input type="hidden" name="id" value="' . $post['id'] . '"/>';
+        $data .= '<input type="hidden" name="hash" value="' . $post['hash'] . '"/>';
+
+        $response = array(
+            'error' => 'no',
+            'title' => 'Конец заказа',
+            'sendtitle' => 'Закончить выполнение заказа',
+            'data' => $data
+        );
+    } else {
+        $response = array(
+            'error' => 'yes',
+            'error_text' => 'Вы не авторизованы',
+        );
+    }
+    return $response;
+}
+
+function PS_GetList($filter = false, $controllerUrl = false)
 {
     $serverId = 1;
     $serverDb = 'test_db2';
@@ -530,8 +798,13 @@ function PS_GetList($filter = false)
     $html_output .= '</thead>';
     if (isset($data) && !empty($data)) {
         foreach ($data as $order_key => $order_value) {
-            $link = PROJECT_URL . "/orders/id/" . $order_value["id"];
-            $link_js = showContent(PROJECT_URL . "/orders", '.a-body', '.loading', false);
+            if (isset($controllerUrl) && !empty($controllerUrl)) {
+                $link = PROJECT_URL . "/{$controllerUrl}/id/" . $order_value["id"];
+                $link_js = showContent(PROJECT_URL . "/{$controllerUrl}", '.a-body', '.loading', false);
+            } else {
+                $link = PROJECT_URL . "/orders/id/" . $order_value["id"];
+                $link_js = showContent(PROJECT_URL . "/orders", '.a-body', '.loading', false);
+            }
             $price = PS_Price($order_value['price']);
 
             $user_owner = USER_GetByID($order_value["owner"]);
@@ -623,36 +896,43 @@ function PS_GetOrderDetail($orderId)
         }
 
         $content .= '</div>';
-        $description = str_replace(PHP_EOL, "<br/>", $data["description"]);
-        $description = str_replace('\r', "<br/>", $description);
-        $description = str_replace('\n', "<br/>", $description);
+        $description = Text_Convert2user($data["description"]);
         $content .= "<p>{$description}</p>";
         /* Если заказ выполен, то пишем об этом */
         if ($data["contractor"] > 0 && isset($contractor)) {
-            if ($data["status"] == 4) {
-                $user_image = '<img src="' . $contractor["img_50"] . '" alt="' . $contractor["name"] . '"/>';
-                $content .= '<div class="a-main__order-contractor">';
-                $content .= '<div class="user">';
-                $content .= $user_image;
-                $content .= '</div>';
-                $content .= '<div class="info">';
-                $content .= '<a href="https://vk.com/' . $contractor["login"] . '">' . $contractor["name"] . '</a>';
-                $content .= '<p>Выполнил ваш заказ</p>';
-                $content .= '</div>';
-                $content .= '</div>';
-            } else if ($data["status"] == 2 && $data["owner"] == $user['id']) {
-                $user_image = '<img src="' . $contractor["img_50"] . '" alt="' . $contractor["name"] . '"/>';
-                $content .= '<div class="a-main__order-contractor">';
-                $content .= '<div class="user">';
-                $content .= $user_image;
-                $content .= '</div>';
-                $content .= '<div class="info">';
-                $content .= '<a href="https://vk.com/' . $contractor["login"] . '">' . $contractor["name"] . '</a>';
-                $content .= '<p>Выполнят ваш заказ</p>';
-                $content .= '</div>';
-                $content .= '</div>';
+            if ($data["owner"] == $user['id']) {
+                $status_exp = array('3', '4', '5');
+                if (in_array($data["status"], $status_exp)) {
+                    $user_image = '<img src="' . $contractor["img_50"] . '" alt="' . $contractor["name"] . '"/>';
+                    $content .= '<div class="a-main__order-contractor">';
+                    $content .= '<div class="user">';
+                    $content .= $user_image;
+                    $content .= '</div>';
+                    $content .= '<div class="info">';
+                    $content .= '<a href="https://vk.com/' . $contractor["login"] . '">' . $contractor["name"] . '</a>';
+                    $content .= '<p>Выполнил ваш заказ</p>';
+                    $content .= '</div>';
+                    $content .= '</div>';
+                } else if ($data["status"] == 2) {
+                    $user_image = '<img src="' . $contractor["img_50"] . '" alt="' . $contractor["name"] . '"/>';
+                    $content .= '<div class="a-main__order-contractor">';
+                    $content .= '<div class="user">';
+                    $content .= $user_image;
+                    $content .= '</div>';
+                    $content .= '<div class="info">';
+                    $content .= '<a href="https://vk.com/' . $contractor["login"] . '">' . $contractor["name"] . '</a>';
+                    $content .= '<p>Выполняет ваш заказ</p>';
+                    $content .= '</div>';
+                    $content .= '</div>';
+                }
             }
         }
+        $comment = PS_GetComment($user['id'], $data['id']);
+        $content .= '<div class="va__orderComment">';
+        if ($comment["error"] == "no") {
+            $content .= $comment["data"];
+        }
+        $content .= '</div>';
     } else {
         $title = "Заказы";
         $content = "<h1>Заказ не найден</h1>";
@@ -662,6 +942,48 @@ function PS_GetOrderDetail($orderId)
         'title' => $title,
         'content' => $content
     );
+    return $response;
+}
+
+function PS_GetComment($viewer, $orderId)
+{
+    $user = USER_GetByID($viewer);
+    $user = $user["response"]["0"]["data"]["0"];
+    if ($user) {
+        $order_data = PS_GetOrderByID($orderId);
+        $order_data = $order_data["response"]["0"]["data"]["0"];
+        if ($order_data) {
+            $status_visible_allow = array('3', '4', '5');
+            $html_output = null;
+            if (in_array($order_data['status'], $status_visible_allow)) {
+
+                if ($user['id'] == ($order_data['owner'] || $order_data['contractor'])) {
+                    $comment = Text_Convert2user($order_data["comment"]);
+
+                    $html_output = '<h4>Комментарий исполнителя:</h4>';
+                    $html_output .= '<p>' . $comment . '</p>';
+                } else {
+                    $html_output = 'test';
+                }
+            }
+
+            $response = array(
+                'error' => 'no',
+                'data' => $html_output
+            );
+        } else {
+            $response = array(
+                'error' => 'yes',
+                'error_text' => 'PGC-1 Заказ #' . $orderId . ' не найден'
+            );
+        }
+    } else {
+        $response = array(
+            'error' => 'yes',
+            'error_text' => 'PGC-1 Вы не авторизованы'
+        );
+    }
+
     return $response;
 }
 
@@ -803,27 +1125,33 @@ function PS_ChangeStatus($orderId, $newStatus, $data = false)
 
 function PS_CreateOrderAction($orderId, $userId)
 {
-    $serverId = "1";
-    $serverDb = "test_db2";
-
-    $select_array = array(
-        'orders' => array(
-            'select' => "`id`, `owner`, `contractor`, `status`",
-            'where' => "`id` = '{$orderId}'"
-        )
-    );
+    $order_data = PS_GetOrderByID($orderId);
 
     $user = USER_GetByID($userId);
     $user = $user["response"]["0"]["data"]["0"];
 
     if ($user) {
-        /* Проверка наличия привязки профиля */
-        $query = BD_select($select_array, $serverId, $serverDb);
+        if (isset($order_data["response"]["0"]["data"])) {
+            $order_data = $order_data["response"]["0"]["data"]["0"];
 
-        if (isset($query["response"]["0"]["data"])) {
-            $order_data = $query["response"]["0"]["data"]["0"];
+            if ($order_data['owner'] == $userId) {
+                if ($user['id'] == ($order_data['owner'] || $order_data['contractor']) && $order_data['status'] == 3) {
+                    $hash = PS_Hash($user['login'] . $order_data["id"] . $user["hash"] . "ps_accept_order");
+                    $content = '<div class="a-main__order-start btn" onclick="orders.acceptOrder(this)" data-orderId="' . $order_data["id"] . '" data-hash="' . $hash . '">Принять</div>';
 
-            if ($order_data['owner'] != $userId) {
+                    $hash = PS_Hash($user['login'] . $order_data["id"] . $user["hash"] . "ps_decline_order");
+                    $content .= '<div class="a-main__order-start btn second" onclick="orders.declineOrder(this)" data-orderId="' . $order_data["id"] . '" data-hash="' . $hash . '">Отказать</div>';
+                    $response = array(
+                        'error' => 'no',
+                        'content' => $content
+                    );
+                } else {
+                    $response = array(
+                        'error' => 'no',
+                        'content' => ''
+                    );
+                }
+            } else {
                 if ($order_data["contractor"] == 0 && in_array($order_data['status'], array('0', '1'))) {
                     $hash = PS_Hash($user['login'] . $order_data["id"] . $user["hash"] . "ps_start_order");
                     $content = '<div class="a-main__order-start btn" onclick="orders.startOrder(this)" data-orderId="' . $order_data["id"] . '" data-hash="' . $hash . '">Начать выполнение задания</div>';
@@ -832,7 +1160,7 @@ function PS_CreateOrderAction($orderId, $userId)
                         'content' => $content
                     );
                 } else {
-                    if ($order_data["contractor"] == $user['id'] && $order_data['status'] == 2) {
+                    if ($order_data['contractor'] == $user['id'] && $order_data['status'] == 2) {
                         $hash = PS_Hash($user['login'] . $order_data["id"] . $user["hash"] . "ps_end_order");
                         $content = '<div class="a-main__order-start btn" onclick="orders.endOrder(this)" data-orderId="' . $order_data["id"] . '" data-hash="' . $hash . '">Закончить выполнение задания</div>';
                         $response = array(
@@ -846,11 +1174,6 @@ function PS_CreateOrderAction($orderId, $userId)
                         );
                     }
                 }
-            } else {
-                $response = array(
-                    'error' => 'yes',
-                    'error_text' => '[OCA1]: Пользователь не найден'
-                );
             }
         } else {
             $response = array(
@@ -891,10 +1214,10 @@ function PS_StyleStatus($data)
                 $response = 'Статус: <span class="status_active">' . $status . '</span>';
                 break;
             case 5:
-                $response = 'Статус: <span class="status_reserve">' . $status . '</span>';
+                $response = 'Статус: <span class="status_block">' . $status . '</span>';
                 break;
             default:
-                $response = 'Статус: <span class="status_block">' . $status . '</span>';
+                $response = 'Статус: <span class="status_reserve">' . $status . '</span>';
                 break;
         }
         return $response;
