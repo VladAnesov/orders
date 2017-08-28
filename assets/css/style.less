@@ -43,6 +43,10 @@ table {
 }
 
 th, td {
+  &.table_min_number {
+    width: 40px !important;
+  }
+
   border-style: solid;
   border-width: 0 1px 1px 0;
   border-color: white;
@@ -180,12 +184,12 @@ td {
 
   &:hover > a {
     border-bottom: 2px solid #cad2db;
-    margin-bottom: 0px;
+    margin-bottom: 0;
   }
 
   &.active > a {
     border-bottom: 2px solid @lightblue;
-    margin-bottom: 0px;
+    margin-bottom: 0;
   }
 
   a {
@@ -473,7 +477,6 @@ td {
 .btn {
   padding: 7px 16px 8px;
   margin: 0;
-  font-size: 12.5px;
   display: inline-block;
   zoom: 1;
   cursor: pointer;

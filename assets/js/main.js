@@ -527,12 +527,10 @@ var orders = {
         orders.createModal(getModal, postData, 300);
     },
     minMax: function (object, min, max) {
-        if (object.value > max) {
-            object.value = max;
-        }
-
-        if (object.value < min) {
-            object.value = min;
+        if (typeof object.value !== 'undefined') {
+            if (object.value > max) {
+                object.value = max;
+            }
         }
     }
 };

@@ -138,12 +138,19 @@ function BD_select($array, $serverid, $database)
     }
 
     $num = 0;
+    //$db = null;
+    //$response['status'] = 'ok';
     foreach ($array as $k_1 => $v_1) {
         $table = mysql_escape_string($k_1);
         $fields = mysql_escape_string($v_1['select']);
         $filter = $v_1['where'];
-
-        $query = "SELECT {$fields} FROM `{$table}` WHERE {$filter}";
+        $orderby = '';
+        if (isset($v_1['sort']) && is_array($v_1['sort'])) {
+            $orderby = "ORDER BY `{$table}`.`{$v_1['sort']['key']}` {$v_1['sort']['type']}";
+            $query = "SELECT {$fields} FROM `{$table}` WHERE {$filter} {$orderby}";
+        } else {
+            $query = "SELECT {$fields} FROM `{$table}` WHERE {$filter}";
+        }
 
         $response['response'][$num]['status'] = 'ok';
         $db = BD_Connect($bd_array[$serverid], $bd_users[$bd_tables[$database]]['user'], $bd_users[$bd_tables[$database]]['password'], $database);
@@ -171,6 +178,8 @@ function BD_select_rows($array, $serverid, $database)
     }
 
     $num = 0;
+    $db = null;
+    $response['status'] = 'ok';
     foreach ($array as $k_1 => $v_1) {
         $table = mysql_escape_string($k_1);
         $fields = mysql_escape_string($v_1['select']);

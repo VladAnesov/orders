@@ -15,8 +15,7 @@ function USERS_INIT($ignore_f_c = false)
 {
     $serverId = 1;
     $serverDb = 'test_db1';
-    $response = array('auth' => false);
-    if (empty($_COOKIE['va_hash']) || $ignore_f_c == true) {
+    if ((!isset($_COOKIE['va_hash']) && empty($_COOKIE['va_hash'])) || $ignore_f_c == true) {
         if (isset($_GET['code']) && !empty($_GET['code']) && ctype_alnum($_GET['code'])) {
             $token = VK_GetToken($_GET['code']);
 
@@ -35,7 +34,7 @@ function USERS_INIT($ignore_f_c = false)
                 /* Проверка наличия привязки профиля */
                 $S_Response = BD_select($select_array, $serverId, $serverDb);
 
-                if (empty($S_Response['response'])) {
+                if (empty($S_Response['response']['0']['data']['0'])) {
                     /* Пользователя нет, регаем */
                     $user_hash = USER_CreateHash($_SERVER['REMOTE_ADDR'] . $user_info['response']['0']['screen_name']);
                     $user_array = array(
@@ -65,12 +64,17 @@ function USERS_INIT($ignore_f_c = false)
                         /* Проверка наличия привязки профиля */
                         $S_Response = BD_select($select_array, $serverId, $serverDb);
 
-                        if (!empty($S_Response['response'])) {
+                        if (!empty($S_Response['response']['0']['data']['0'])) {
                             $response = array(
                                 'auth' => true,
                                 'user' => $S_Response['response']['0']['data']['0']
                             );
                             header("Location: " . PROJECT_URL);
+                        } else {
+                            $response = array(
+                                'auth' => false,
+                                'authlink' => GenerateLinkAuth()
+                            );
                         }
                     } else {
                         $response = array(
@@ -110,12 +114,17 @@ function USERS_INIT($ignore_f_c = false)
                         /* Проверка наличия привязки профиля */
                         $S_Response = BD_select($select_array, $serverId, $serverDb);
 
-                        if (!empty($S_Response['response'])) {
+                        if (!empty($S_Response['response']['0']['data']['0'])) {
                             $response = array(
                                 'auth' => true,
                                 'user' => $S_Response['response']['0']['data']['0']
                             );
                             header("Location: " . PROJECT_URL);
+                        } else {
+                            $response = array(
+                                'auth' => false,
+                                'authlink' => GenerateLinkAuth()
+                            );
                         }
                     } else {
                         $response = array(
@@ -149,8 +158,9 @@ function USERS_INIT($ignore_f_c = false)
         /* Проверка наличия привязки профиля */
         $S_Response = BD_select($select_array, $serverId, $serverDb);
 
-        if (empty($S_Response['response'])) {
+        if (empty($S_Response['response']['0']['data']['0'])) {
             if (isset($_COOKIE['va_hash'])) {
+                unset($_COOKIE['va_hash']);
                 if (USERS_LOGOUT()) {
                     $response = array(
                         'auth' => false,
@@ -165,6 +175,11 @@ function USERS_INIT($ignore_f_c = false)
 
             if ($user_data['ip'] != $_SERVER['REMOTE_ADDR']) {
                 if (USERS_LOGOUT()) {
+                    $response = array(
+                        'auth' => false,
+                        'authlink' => GenerateLinkAuth()
+                    );
+                } else {
                     $response = array(
                         'auth' => false,
                         'authlink' => GenerateLinkAuth()
@@ -205,7 +220,7 @@ function USERS_GET_USER()
 
         $S_Response = BD_select($select_array, $serverId, $serverDb);
 
-        if (empty($S_Response['response'])) {
+        if (empty($S_Response['response']['0']['data']['0'])) {
             return false;
         } else {
             return $S_Response['response']['0']['data']['0'];
@@ -218,6 +233,7 @@ function USERS_GET_USER()
 function USERS_LOGOUT()
 {
     if (isset($_COOKIE['va_hash'])) {
+        unset($_COOKIE['va_hash']);
         if (setcookie("va_hash", '', time() - 86300, PROJECT_URL, "vladanesov.ru")) {
             return true;
         } else {

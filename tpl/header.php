@@ -26,9 +26,9 @@ if (isset($auth['user'])) {
         'url' => PROJECT_URL . "/my"
     );
 
-    $menu['profile'] = array(
-        'name' => 'Мой профиль',
-        'url' => PROJECT_URL . "/profile"
+    $menu['history'] = array(
+        'name' => 'История транзакций',
+        'url' => PROJECT_URL . "/history"
     );
 }
 ?>
@@ -73,7 +73,7 @@ if (isset($auth['user'])) {
         <div class="a-main__user">
             <?php
 
-            if (isset($auth['authlink']) && !empty($auth['authlink'])) {
+            if (isset($auth['authlink']) && !empty($auth['authlink']) && $auth['auth'] == false) {
                 echo '<a class="auth" href="' . $auth['authlink'] . '">Авторизоваться через ВКонтакте</a>';
             } else {
                 global $PaySystemConfig;
@@ -88,7 +88,7 @@ if (isset($auth['user'])) {
                 echo '</div>';
                 echo '</div>';
                 echo '</div>';
-                echo '<a href="' . PROJECT_URL . '/auth?logout=yes">Выйти</a>';
+                echo '<a class="btn second" href="' . PROJECT_URL . '/auth?logout=yes">Выйти</a>';
                 echo '</div>';
             }
             ?>

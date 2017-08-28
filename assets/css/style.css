@@ -25,6 +25,11 @@ td {
   border-color: white;
   padding: 5px 20px;
 }
+
+th.table_min_number,
+td.table_min_number {
+  width: 40px !important;
+}
 th:first-child,
 td:first-child {
   text-align: left;
@@ -140,11 +145,11 @@ td {
 }
 .a-main__menu li:hover > a {
   border-bottom: 2px solid #cad2db;
-  margin-bottom: 0px;
+  margin-bottom: 0;
 }
 .a-main__menu li.active > a {
   border-bottom: 2px solid #6387ac;
-  margin-bottom: 0px;
+  margin-bottom: 0;
 }
 .a-main__menu li a {
   padding: 18px 6px 20px;
@@ -398,7 +403,6 @@ td {
 .btn {
   padding: 7px 16px 8px;
   margin: 0;
-  font-size: 12.5px;
   display: inline-block;
   zoom: 1;
   cursor: pointer;
@@ -426,7 +430,6 @@ td {
   padding-top: 8px;
   padding-bottom: 7px;
 }
-
 .btn.second {
   background-color: #e5ebf1;
   color: #55677d;
@@ -471,17 +474,14 @@ td {
   word-wrap: break-word;
   font-size: 13px;
 }
-
 .va__orderComment h4 {
   margin: 0;
   padding: 10px 0 0 0;
   border-top: 1px solid #e7e8ec;
 }
-
 .va__orderAction div {
   margin-right: 10px;
 }
-
 .va__orderAction div:last-child {
   margin-right: 0;
 }

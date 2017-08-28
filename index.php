@@ -7,6 +7,10 @@
  */
 
 ini_set('display_errors', 'on');
+
+/* костыль, потому что у меня не получилось нормально настроить VestaCP */
+$_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_X_FORWARDED_FOR'];
+
 define('CORE_INIT', true);
 define('PROJECT_URL', '/projects/project_1635');
 define('PROJECT_LINK', $_SERVER['DOCUMENT_ROOT'] . PROJECT_URL);
@@ -14,7 +18,7 @@ define('BALANCE_CLASS', '.a-main__balance-value');
 define('ORDER_CLASS', '.va__orderStatus');
 define('ORDER_ACTION_CLASS', '.va__orderAction');
 define('ORDER_COMMENT', '.va__orderComment');
-define('VERSION', 'Beta 2.1');
+define('VERSION', 'Beta 2.2');
 
 $serverId = 1;
 $serverDb = 'test_db1';

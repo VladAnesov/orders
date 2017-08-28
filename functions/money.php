@@ -67,48 +67,56 @@ function M_add2user($data)
 
         $hash = PS_Hash($user['login'] . $user["hash"] . "m_add");
         if ($hash == $data["hash"]) {
-            if (isset($data['cost']) && !ctype_digit($data['cost'])) {
-                $response = array(
-                    'error' => 'yes',
-                    'error_text' => "price is not numeric"
-                );
-            } else {
-                $balance_add = ($user['balance'] + $data['sum']);
-                if ($data['sum'] < $PaySystemConfig['min_price']) {
+            $ha_activity = HA_Create("m_create_data", $data["hash"], $data);
+            if ($ha_activity['error'] != "yes") {
+                if (isset($data['cost']) && !ctype_digit($data['cost'])) {
                     $response = array(
                         'error' => 'yes',
-                        'error_text' => "min price: " . PS_Balance($PaySystemConfig['min_price'])
-                    );
-                } else if ($data['sum'] > $PaySystemConfig['max_price']) {
-                    $response = array(
-                        'error' => 'yes',
-                        'error_text' => "max price: " . PS_Balance($PaySystemConfig['max_price'])
-                    );
-                } else if ($balance_add > $PaySystemConfig['max_price']) {
-                    $canPay = $PaySystemConfig['max_price'] - $user['balance'];
-                    $response = array(
-                        'error' => 'yes',
-                        'error_text' => "Вы можете пополнить баланс на сумму " . PS_Balance($canPay) . ". Лимит кошелька: " . PS_Balance($PaySystemConfig['max_price'])
+                        'error_text' => "price is not numeric"
                     );
                 } else {
-                    $transactionStart = M_createTransaction("add", $data['sum'], 0, $user["id"]);
-                    if ($transactionStart["error"] == "no") {
-                        $sum = PS_Balance($data['sum']);
-                        $user_balance = PS_Balance($transactionStart["payee_balance"]);
-                        $response = array(
-                            'error' => 'no',
-                            'update' => array(
-                                '.a-main__balance-value' => $user_balance
-                            ),
-                            'htmlText' => 'Вы добавили на свой аккаунт <b>' . $sum . '</b><br>Теперь ваш баланс: <b>' . $user_balance . '</b>'
-                        );
-                    } else {
+                    $balance_add = ($user['balance'] + $data['sum']);
+                    if ($data['sum'] < $PaySystemConfig['min_price']) {
                         $response = array(
                             'error' => 'yes',
-                            'error_text' => $transactionStart["error_text"]
+                            'error_text' => "min price: " . PS_Balance($PaySystemConfig['min_price'])
                         );
+                    } else if ($data['sum'] > $PaySystemConfig['max_price']) {
+                        $response = array(
+                            'error' => 'yes',
+                            'error_text' => "max price: " . PS_Balance($PaySystemConfig['max_price'])
+                        );
+                    } else if ($balance_add > $PaySystemConfig['max_price']) {
+                        $canPay = $PaySystemConfig['max_price'] - $user['balance'];
+                        $response = array(
+                            'error' => 'yes',
+                            'error_text' => "Вы можете пополнить баланс на сумму " . PS_Balance($canPay) . " Лимит кошелька: " . PS_Balance($PaySystemConfig['max_price'])
+                        );
+                    } else {
+                        $transactionStart = M_createTransaction("add", $data['sum'], 0, $user["id"]);
+                        if ($transactionStart["error"] == "no") {
+                            $sum = PS_Balance($data['sum']);
+                            $user_balance = PS_Balance($transactionStart["payee_balance"]);
+                            $response = array(
+                                'error' => 'no',
+                                'update' => array(
+                                    '.a-main__balance-value' => $user_balance
+                                ),
+                                'htmlText' => 'Вы добавили на свой аккаунт <b>' . $sum . '</b><br>Теперь ваш баланс: <b>' . $user_balance . '</b>'
+                            );
+                        } else {
+                            $response = array(
+                                'error' => 'yes',
+                                'error_text' => $transactionStart["error_text"]
+                            );
+                        }
                     }
                 }
+            } else {
+                $response = array(
+                    'error' => 'yes',
+                    'error_text' => "[008] You observed suspicious activity, please try again later"
+                );
             }
         } else {
             $response = array(
@@ -141,7 +149,6 @@ function M_GetByID($id)
             )
         );
 
-        /* Проверка наличия привязки профиля */
         $S_Response = BD_select($select_array, $serverId, $serverDb);
 
         return $S_Response;
@@ -150,6 +157,27 @@ function M_GetByID($id)
     }
 }
 
+function M_GetTransactionList($userId)
+{
+    $serverId = 1;
+    $serverDb = 'test_db4';
+
+    $id_sql = mysql_escape_string($userId);
+
+    $select_array = array(
+        'transaction' => array(
+            'select' => "*",
+            'where' => "(`sender`='{$id_sql}' OR `payee` = '{$id_sql}')",
+            'sort' => array(
+                'key' => 'id',
+                'type' => 'desc'
+            )
+        )
+    );
+
+    $S_Response = BD_select($select_array, $serverId, $serverDb);
+    return $S_Response;
+}
 
 function M_transactionUpdate($id, $data, $ignore = false)
 {
@@ -175,6 +203,7 @@ function M_transactionUpdate($id, $data, $ignore = false)
         $user = M_GetByID($id);
         $user_data = $user["response"]["0"]["data"]["0"];
         if (isset($user_data["id"])) {
+            $update_fields = null;
             if ($ignore == false) {
                 foreach ($data as $key => $value) {
                     $update_fields[mysql_escape_string($key)] = mysql_escape_string($value);

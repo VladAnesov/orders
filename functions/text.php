@@ -23,6 +23,8 @@ function Text_Convert2user($text)
 
 function Text_SURL($arrayText)
 {
+    $url = null;
+    $name = null;
     if (is_array($arrayText)) {
         $url = $arrayText[1];
         $name = $url;
@@ -53,4 +55,10 @@ function Text_SURL($arrayText)
     }
 
     return '<a href="' . $url . '">' . $name . '</a>';
+}
+
+function TEXT_declinationOfNum($number, $titles)
+{
+    $cases = array(2, 0, 1, 1, 1, 2);
+    return $number . " " . $titles[($number % 100 > 4 && $number % 100 < 20) ? 2 : $cases[min($number % 10, 5)]];
 }

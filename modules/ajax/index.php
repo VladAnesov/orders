@@ -49,8 +49,9 @@ if (isset($params['type'])) {
                             'data' => "<b>" . $get_price["error"] . "</b>"
                         );
                     } else {
+                        $percent = null;
                         $text = "Стоимость заказа: <b>" . PS_Balance($get_price["price"], true) . "</b> ";
-                        $text .= "коммисия системы: <b>" . PS_Balance($get_price["tax"]) . "</b>";
+                        $text .= "комиссия системы: <b>" . PS_Balance($get_price["tax"]) . "</b>";
                         switch ($PaySystemConfig['percent_type']) {
                             case 'P':
                                 $percent = "";

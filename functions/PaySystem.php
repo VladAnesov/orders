@@ -207,8 +207,7 @@ function PS_CreateOrder($data)
             'error' => 'yes',
             'error_text' => 'data is empty'
         );
-    }
-    if (!isset($data["name"]) || mb_strlen($data["name"], 'UTF-8') < 1) {
+    } else if (!isset($data["name"]) || mb_strlen($data["name"], 'UTF-8') < 1) {
         $response = array(
             'error' => 'yes',
             'error_text' => 'Поле "Название" пустое'
@@ -379,10 +378,10 @@ function PS_StartOrder($data)
                         if (($user['balance'] + $price_check['price']) > $PaySystemConfig['max_price']) {
                             $response = array(
                                 'error' => 'yes',
-                                'error_text' => 'Вы не можете начать выполнять этот заказ, т.к. если вы выполните этот заказ, ваш лимит кошелька будет привышен.',
+                                'error_text' => 'Вы не можете начать выполнять этот заказ, т.к. если вы выполните этот заказ, ваш лимит кошелька будет превышен.',
                             );
                         } else {
-                            if ($order_data['status'] != $new_status) {
+                            if ($order_data['status'] != $new_status && $order_data['status'] < $new_status || $order_data['contractor'] == 0) {
                                 $hash_verify = PS_Hash($user['login'] . $orderId . $user["hash"] . $method);
                                 if ($data['hash'] == $hash_verify) {
                                     $ha_activity = HA_Create($method, $data["hash"], $data);
@@ -426,7 +425,7 @@ function PS_StartOrder($data)
                             } else {
                                 $response = array(
                                     'error' => 'yes',
-                                    'error_text' => 'Заказ уже начал кто-то делать, к сожалению, вы опаздали.',
+                                    'error_text' => 'Заказ уже начал кто-то делать, к сожалению, вы опоздали.',
                                 );
                             }
                         }
@@ -501,7 +500,7 @@ function PS_processOrder($process, $data)
                                     if ($ha_activity['error'] != "yes") {
                                         if (isset($data['process_info']) && is_array($data['process_info'])) {
                                             foreach ($data['process_info'] as $k => $v) {
-                                                if (!is_array($v) || !is_array($k)) {
+                                                if (!is_array($v) && !is_array($k)) {
                                                     $data['process_info'][mysql_escape_string(trim($k))] = mysql_escape_string(trim($v));
                                                 }
                                             }
