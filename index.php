@@ -18,7 +18,7 @@ define('BALANCE_CLASS', '.a-main__balance-value');
 define('ORDER_CLASS', '.va__orderStatus');
 define('ORDER_ACTION_CLASS', '.va__orderAction');
 define('ORDER_COMMENT', '.va__orderComment');
-define('VERSION', 'Beta 2.2');
+define('VERSION', 'Beta 2.3 Final');
 
 $serverId = 1;
 $serverDb = 'test_db1';

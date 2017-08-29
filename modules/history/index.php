@@ -17,7 +17,7 @@ if ($user) {
         $transaction_list = $transaction_list["response"]["0"]["data"];
         $word_transaction_array = array('транзакция', 'транзакции', 'транзакций');
         $transaction_count = TEXT_declinationOfNum(count($transaction_list), $word_transaction_array);
-        $content .= '<p>Найдено ' . $transaction_count . '</p>';
+        $content .= '<p>В списке ' . $transaction_count . '</p>';
 
         $content .= '<table>';
         $content .= '<thead>';
@@ -40,7 +40,7 @@ if ($user) {
         }
         $content .= '</table>';
     } else {
-        $content .= "Ничего не найдено";
+        $content .= "Нет данных";
     }
 } else {
     $content = 'Ошибка доступа';

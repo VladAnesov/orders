@@ -25,17 +25,17 @@ function PS_CreateOrderDialog()
 
         $data = '<div class="va__modal_iblock">';
         $data .= '<div class="va__modal_iblock-title">Название</div>';
-        $data .= '<input class="va-input" name="name" placeholder="Название заказа" required/>';
+        $data .= '<input autocomplete="off"  class="va-input" name="name" placeholder="Название заказа" required/>';
         $data .= '</div>';
 
         $data .= '<div class="va__modal_iblock">';
         $data .= '<div class="va__modal_iblock-title">Стоимость</div>';
-        $data .= '<input type="number" class="va-input" onkeyup="this.value=this.value.replace(/[^\d]/,\'\')" pattern="[0-9]{5}" oninput="orders.getPrice(this, \'.va__price\');" min="' . $PaySystemConfig["min_price"] . '" max="' . $PaySystemConfig["max_price"] . '" name="cost" placeholder="Сумма в рублях" required/>';
+        $data .= '<input autocomplete="off" type="number" class="va-input" pattern="[0-9]{5}" onkeypress=\'return event.charCode >= 48 && event.charCode <= 57\' oninput="orders.getPrice(this, \'.va__price\');" min="' . $PaySystemConfig["min_price"] . '" max="' . $PaySystemConfig["max_price"] . '" name="cost" placeholder="Сумма в рублях" required/>';
         $data .= '</div>';
 
         $data .= '<div class="va__modal_iblock">';
         $data .= '<div class="va__modal_iblock-title">Описание</div>';
-        $data .= '<textarea class="va-textarea" name="description" placeholder="Кратко опишите что нужно сделать." required></textarea>';
+        $data .= '<textarea autocomplete="off" class="va-textarea" name="description" placeholder="Кратко опишите что нужно сделать." required></textarea>';
         $data .= '</div>';
         $data .= '<input type="hidden" name="hash" value="' . $hash . '"/>';
 
@@ -240,6 +240,7 @@ function PS_CreateOrder($data)
                     );
                 } else {
                     global $PaySystemConfig;
+                    $data['cost'] = floor($data['cost']);
                     if ($data['cost'] < $PaySystemConfig['min_price']) {
                         $response = array(
                             'error' => 'yes',
@@ -1060,7 +1061,7 @@ function PS_Balance($balance, $text = false)
             if ($text) {
                 $data = ($balance > 0) ? ($balance . " " . $PaySystemConfig['currency']) : "бесплатно";
             } else {
-                $data = $balance . " " . $PaySystemConfig['currency'];
+                $data = floor($balance) . " " . $PaySystemConfig['currency'];
             }
             break;
     }

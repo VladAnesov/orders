@@ -77,7 +77,6 @@ if (isset($auth['user'])) {
                 echo '<a class="auth" href="' . $auth['authlink'] . '">Авторизоваться через ВКонтакте</a>';
             } else {
                 global $PaySystemConfig;
-                echo '<div class="a-main__user">';
                 echo '<div class="a-main__user-block">';
                 echo '<img src="' . $auth['user']['img_50'] . '" alt="' . $auth['user']['name'] . '" />';
                 echo '<div class="a-main__balance">';
@@ -89,7 +88,6 @@ if (isset($auth['user'])) {
                 echo '</div>';
                 echo '</div>';
                 echo '<a class="btn second" href="' . PROJECT_URL . '/auth?logout=yes">Выйти</a>';
-                echo '</div>';
             }
             ?>
         </div>

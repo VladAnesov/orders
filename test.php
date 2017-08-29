@@ -11,3 +11,5 @@ ini_set('display_errors', 'on');
 echo $_SERVER['REMOTE_ADDR'];
 echo '<br>';
 echo $_SERVER['HTTP_X_FORWARDED_FOR'];
+echo '<br>';
+echo floor(02);

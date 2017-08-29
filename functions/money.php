@@ -20,7 +20,7 @@ function M_createModalAdd()
 
         $data = '<div class="va__modal_iblock">';
         $data .= '<div class="va__modal_iblock-title">Сумма</div>';
-        $data .= '<input autocomplete="off" type="number" class="va-input" onkeyup="this.value=this.value.replace(/[^\d]/,\'\')" pattern="[0-9]{5}" oninput="orders.minMax(this, ' . $PaySystemConfig["min_price"] . ', ' . $PaySystemConfig["max_price"] . ');" min="' . $PaySystemConfig["min_price"] . '" max="' . $PaySystemConfig["max_price"] . '" name="sum" placeholder="Сумма в рублях" required/>';
+        $data .= '<input autocomplete="off" type="number" class="va-input" onkeypress=\'return event.charCode >= 48 && event.charCode <= 57\' pattern="[0-9]{5}" oninput="orders.minMax(this, ' . $PaySystemConfig["min_price"] . ', ' . $PaySystemConfig["max_price"] . ');" min="' . $PaySystemConfig["min_price"] . '" max="' . $PaySystemConfig["max_price"] . '" name="sum" placeholder="Сумма в рублях" required/>';
         $data .= '</div>';
 
         $data .= '<input type="hidden" name="hash" value="' . $hash . '"/>';
@@ -69,12 +69,13 @@ function M_add2user($data)
         if ($hash == $data["hash"]) {
             $ha_activity = HA_Create("m_create_data", $data["hash"], $data);
             if ($ha_activity['error'] != "yes") {
-                if (isset($data['cost']) && !ctype_digit($data['cost'])) {
+                if (isset($data['sum']) && !ctype_digit($data['sum'])) {
                     $response = array(
                         'error' => 'yes',
                         'error_text' => "price is not numeric"
                     );
                 } else {
+                    $data['sum'] = floor($data['sum']);
                     $balance_add = ($user['balance'] + $data['sum']);
                     if ($data['sum'] < $PaySystemConfig['min_price']) {
                         $response = array(
@@ -419,7 +420,7 @@ function M_transactionType($type, $check)
         'add' => 'Пополнение',
         'order_create' => 'Оплата создания заказа',
         'order_create_tax' => 'Оплата комиссии системы за создание заказа',
-        'order_payee' => 'Пополнение за выполнение задание',
+        'order_payee' => 'Пополнение за выполнение задания',
         'transfer_send' => 'Перевод денег другому пользователю',
         'transfer_payee' => 'Получение денег от другого пользователя',
         'order_refund' => 'Возврат денежных средств',
